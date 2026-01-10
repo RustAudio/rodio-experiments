@@ -766,7 +766,7 @@ checksum = "8d942b98df5e658f56f20d592c7f868833fe38115e65c33003d8cd224b0155da"
 [[package]]
 name = "rodio"
 version = "0.21.1"
-source = "git+https://www.github.com/RustAudio/rodio?branch=fixed-source-for-real#2ee6a01dadf7333fd38a445ead8fdd177b5e867c"
+source = "git+https://www.github.com/RustAudio/rodio?branch=master#1427642a0ba8c98604f5af2aa7504e3eaed8be0d"
 dependencies = [
  "atomic_float",
  "cpal",
@@ -781,7 +781,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rodio2"
+name = "rodio-experiments"
 version = "0.1.0"
 dependencies = [
  "audioadapter",

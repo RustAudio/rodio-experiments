@@ -12,8 +12,8 @@
 //! documentation for queue and steer the decision whether its worth the time
 //! investment to try more "Uniform" sources.
 
-use rodio2::ConstSource;
-use rodio2::const_source::signal_generator::{Function, SignalGenerator};
+use rodio_experiments::ConstSource;
+use rodio_experiments::const_source::signal_generator::{Function, SignalGenerator};
 use std::hint::black_box;
 use std::time::Duration;
 
@@ -32,9 +32,9 @@ fn sine() -> impl ConstSource<44100, 2> {
 
 mod const_source {
     use super::*;
-    use rodio2::ConstSource;
-    use rodio2::const_source::queue::Queue;
-    use rodio2::const_source::queue::uniform::UniformQueue;
+    use rodio_experiments::ConstSource;
+    use rodio_experiments::const_source::queue::Queue;
+    use rodio_experiments::const_source::queue::uniform::UniformQueue;
 
     fn consume_uniform_queue<S: ConstSource<44100, 2>>(
         queue: UniformQueue<44100, 2, S>,
@@ -73,9 +73,10 @@ mod const_source {
 mod fixed_source {
     use super::*;
     use rodio::nz;
-    use rodio2::FixedSource;
-    use rodio2::fixed_source::queue::Queue;
-    use rodio2::fixed_source::queue::uniform::UniformQueue;
+    use rodio::FixedSource;
+    use rodio_experiments::fixed_source::FixedSourceExt;
+    use rodio_experiments::fixed_source::queue::Queue;
+    use rodio_experiments::fixed_source::queue::uniform::UniformQueue;
 
     fn consume_queue(queue: Queue, num: usize) -> usize {
         queue
@@ -87,7 +88,7 @@ mod fixed_source {
     fn normal(num: usize) {
         let (source, handle) = Queue::new(nz!(2), nz!(44100));
         for _ in 0..num {
-            handle.add(Box::new(sine().adaptor_to_dynamic())).unwrap();
+            handle.add(Box::new(sine().into_dynamic_source())).unwrap();
         }
         black_box(consume_queue(black_box(source), num));
     }
@@ -96,7 +97,7 @@ mod fixed_source {
     fn uniform(num: usize) {
         let (source, handle) = UniformQueue::new(nz!(2), nz!(44100));
         for _ in 0..num {
-            handle.add(sine().adaptor_to_dynamic()).unwrap();
+            handle.add(sine().into_dynamic_source()).unwrap();
         }
         black_box(consume_uniform_queue(black_box(source), num));
     }
@@ -111,7 +112,7 @@ mod fixed_source {
 mod dynamic_source {
     use super::*;
     use rodio::queue::{SourcesQueueOutput, queue};
-    use rodio2::DynamicSource;
+    use rodio_experiments::DynamicSource;
 
     fn consume_queue(queue: SourcesQueueOutput, num: usize) -> usize {
         queue
@@ -123,7 +124,7 @@ mod dynamic_source {
     fn normal(num: usize) {
         let (handle, source) = queue(true);
         for _ in 0..num {
-            handle.append(sine().adaptor_to_dynamic());
+            handle.append(sine().into_dynamic_source());
         }
         black_box(consume_queue(black_box(source), num));
     }

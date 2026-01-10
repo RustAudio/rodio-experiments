@@ -23,8 +23,8 @@
 //! Generic wrapper and implement source trait for that? Might need specialization in which case we
 //! will just have to spam a ton of wrappers...
 
-use rodio2::ConstSource;
-use rodio2::const_source::signal_generator::{Function, SignalGenerator};
+use rodio_experiments::ConstSource;
+use rodio_experiments::const_source::signal_generator::{Function, SignalGenerator};
 use std::hint::black_box;
 use std::time::Duration;
 
@@ -45,8 +45,9 @@ mod const_source {
     use std::sync::mpsc;
 
     use super::*;
-    use rodio2::ConstSource;
-    use rodio2::const_source::mixer::ConstMix;
+    use divan::Bencher;
+    use rodio_experiments::ConstSource;
+    use rodio_experiments::const_source::mixer::ConstMix;
 
     fn consume_mixer(queue: impl ConstSource<44100, 2>, num: usize) -> usize {
         queue
@@ -68,20 +69,26 @@ mod const_source {
     }
 
     #[divan::bench(consts = SINES)]
-    fn uniform_vec<const N: usize>() {
-        let sources: Vec<_> = (0..N).into_iter().map(|_| sine()).collect();
-        let source = sources.mix();
-        black_box(consume_mixer(black_box(source), N));
+    fn uniform_vec<const N: usize>(bencher: Bencher) {
+        bencher
+            .with_inputs(|| {
+                let sources: Vec<_> = (0..N).into_iter().map(|_| sine()).collect();
+                sources.mix()
+            })
+            .bench_values(|source| black_box(consume_mixer(black_box(source), N)));
     }
 
     #[divan::bench(consts = SINES)]
-    fn vec<const N: usize>() {
-        let sources: Vec<_> = (0..N)
-            .into_iter()
-            .map(|_| Box::new(sine()) as Box<dyn ConstSource<44100, 2>>)
-            .collect();
-        let source = sources.mix();
-        black_box(consume_mixer(black_box(source), N));
+    fn vec<const N: usize>(bencher: Bencher) {
+        bencher
+            .with_inputs(|| {
+                let sources: Vec<_> = (0..N)
+                    .into_iter()
+                    .map(|_| Box::new(sine()) as Box<dyn ConstSource<44100, 2>>)
+                    .collect();
+                sources.mix()
+            })
+            .bench_values(|source| black_box(consume_mixer(black_box(source), N)));
     }
 
     #[divan::bench(consts = SINES)]
@@ -109,9 +116,9 @@ mod const_source {
 // mod fixed_source {
 //     use super::*;
 //     use rodio::nz;
-//     use rodio2::FixedSource;
-//     use rodio2::fixed_source::queue::Queue;
-//     use rodio2::fixed_source::queue::uniform::UniformQueue;
+//     use rodio_experiments::FixedSource;
+//     use rodio_experiments::fixed_source::queue::Queue;
+//     use rodio_experiments::fixed_source::queue::uniform::UniformQueue;
 //
 //     fn consume_queue(queue: Queue, num: usize) -> usize {
 //         queue
@@ -147,7 +154,7 @@ mod const_source {
 // mod dynamic_source {
 //     use super::*;
 //     use rodio::queue::{SourcesQueueOutput, queue};
-//     use rodio2::DynamicSource;
+//     use rodio_experiments::DynamicSource;
 //
 //     fn consume_queue(queue: SourcesQueueOutput, num: usize) -> usize {
 //         queue

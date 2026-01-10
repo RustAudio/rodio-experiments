@@ -2,7 +2,7 @@ use rodio::{ChannelCount, Sample, SampleRate, FixedSource};
 
 use crate::conversions::channelcount::VariableInputChannelConvertor;
 use crate::conversions::resampler::variable_input::VariableInputResampler;
-use crate::{DynamicSource};
+use crate::Source as DynamicSource;
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
