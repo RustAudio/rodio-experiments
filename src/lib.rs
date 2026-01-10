@@ -9,13 +9,16 @@
 pub use rodio::Source as DynamicSource;
 pub use rodio::source as dynamic_source;
 pub use rodio::speakers;
-pub use rodio::{ChannelCount, SampleRate};
+pub use rodio::{ChannelCount, SampleRate, Sample};
 pub use rodio::{Decoder, MixerOsSink, mixer, nz};
+pub use rodio::{Player};
 
 pub mod const_source;
 pub mod conversions;
 pub mod dynamic_source_ext;
 pub mod fixed_source;
+
+pub use rodio::cpal;
 
 pub use const_source::ConstSource;
 pub use rodio::FixedSource;
