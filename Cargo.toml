@@ -1,0 +1,25 @@
+[package]
+name = "rodio2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rodio = { git = "https://www.github.com/RustAudio/rodio",  branch = "fixed-source-for-real", features = ["experimental", "playback", "wav_output"] }
+rubato = "1.0.0"
+audioadapter = "2.0"
+audioadapter-buffers = "2.0"
+itertools = "0.14.0"
+thiserror = "2.0.17"
+
+[dev-dependencies]
+spectrum-analyzer = "1.7.0"
+divan = "0.1.21"
+
+
+[[bench]]
+name = "queue"
+harness = false
+
+[[bench]]
+name = "mixer"
+harness = false
