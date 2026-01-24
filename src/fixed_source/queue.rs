@@ -4,7 +4,6 @@ use std::sync::{Arc, mpsc};
 use rodio::FixedSource;
 use rodio::{ChannelCount, SampleRate};
 
-
 pub mod uniform;
 
 pub struct Queue {
@@ -73,7 +72,7 @@ pub enum AddError {
 }
 
 impl QueueHandle {
-    pub fn add(&self, source: Box<dyn FixedSource>) -> Result<SourceId, AddError> {
+    pub fn try_add(&self, source: Box<dyn FixedSource>) -> Result<SourceId, AddError> {
         if source.channels() != self.channels {
             return Err(AddError::WrongChannelCount {
                 got: source.channels(),
@@ -106,6 +105,13 @@ impl QueueHandle {
             source_id: self.current_id.load(Ordering::Relaxed),
         }
     }
+
+    pub fn channels(&self) -> crate::ChannelCount {
+        self.channels
+    }
+    pub fn sample_rate(&self) -> crate::SampleRate {
+        self.sample_rate
+    }
 }
 
 impl FixedSource for Queue {
@@ -113,11 +119,11 @@ impl FixedSource for Queue {
         None // endless
     }
 
-    fn channels(&self) -> rodio::ChannelCount {
+    fn channels(&self) -> crate::ChannelCount {
         self.channels
     }
 
-    fn sample_rate(&self) -> rodio::SampleRate {
+    fn sample_rate(&self) -> crate::SampleRate {
         self.sample_rate
     }
 }

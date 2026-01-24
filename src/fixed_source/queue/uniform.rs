@@ -93,6 +93,13 @@ impl<S: FixedSource> UniformQueueHandle<S> {
             source_id: self.current_id.load(Ordering::Relaxed),
         }
     }
+
+    pub fn channels(&self) -> crate::ChannelCount {
+        self.channels
+    }
+    pub fn sample_rate(&self) -> crate::SampleRate {
+        self.sample_rate
+    }
 }
 
 impl<S: FixedSource> FixedSource for UniformQueue<S> {
@@ -100,17 +107,17 @@ impl<S: FixedSource> FixedSource for UniformQueue<S> {
         None // endless
     }
 
-    fn channels(&self) -> rodio::ChannelCount {
+    fn channels(&self) -> crate::ChannelCount {
         self.channels
     }
 
-    fn sample_rate(&self) -> rodio::SampleRate {
+    fn sample_rate(&self) -> crate::SampleRate {
         self.sample_rate
     }
 }
 
 impl<S: FixedSource> Iterator for UniformQueue<S> {
-    type Item = rodio::Sample;
+    type Item = crate::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
