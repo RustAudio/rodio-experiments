@@ -5,23 +5,28 @@ use rodio::FixedSource;
 use rodio::Sample;
 use rodio::SampleRate;
 
+use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 
-use crate::fixed_source::amplify::Amplify;
-use crate::ConstSource;
-use crate::fixed_source::pausable::Pausable;
-use crate::fixed_source::periodic_access::PeriodicAccess;
-use crate::fixed_source::periodic_access::WithData;
-use crate::fixed_source::stoppable::Stoppable;
+use amplify::Amplify;
+use inspect::InspectFrame;
+use pausable::Pausable;
+use periodic_access::PeriodicAccess;
+use periodic_access::WithData;
+use stoppable::Stoppable;
 
 pub mod amplify;
 pub mod buffer;
+pub mod inspect;
 pub mod pausable;
 pub mod periodic_access;
 pub mod queue;
 pub mod stoppable;
 pub mod take;
+
+pub mod signal_generator;
+pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
 
 pub trait FixedSourceExt: FixedSource {
     fn take_duration(self, duration: Duration) -> take::TakeDuration<Self>
@@ -107,6 +112,13 @@ pub trait FixedSourceExt: FixedSource {
             inner: self,
             factor: amplify.as_linear(),
         }
+    }
+
+    fn inspect_frame<F: FnMut(Vec<Sample>) -> Vec<Sample>>(self, f: F) -> InspectFrame<Self, F>
+    where
+        Self: Sized,
+    {
+        InspectFrame::new(self, f)
     }
 }
 

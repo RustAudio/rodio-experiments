@@ -1,10 +1,14 @@
 // adapted from rodio. Copyright rodio contributors.
 // Tests and docs removed for brevity (will be re-added once contributing to upstream)
 
-use std::f32::consts::TAU;
 use std::time::Duration;
 
-use crate::ConstSource;
+use crate::nz;
+
+use crate::SampleRate;
+
+use crate::FixedSource;
+use crate::const_source;
 
 pub type GeneratorFunction = fn(f32) -> f32;
 
@@ -16,61 +20,46 @@ pub enum Function {
     Sawtooth,
 }
 
-pub(crate) fn sine_signal(phase: f32) -> f32 {
-    (TAU * phase).sin()
-}
-
-pub(crate) fn triangle_signal(phase: f32) -> f32 {
-    4.0f32 * (phase - (phase + 0.5f32).floor()).abs() - 1f32
-}
-
-pub(crate) fn square_signal(phase: f32) -> f32 {
-    if phase % 1.0f32 < 0.5f32 {
-        1.0f32
-    } else {
-        -1.0f32
-    }
-}
-
-pub(crate) fn sawtooth_signal(phase: f32) -> f32 {
-    2.0f32 * (phase - (phase + 0.5f32).floor())
-}
-
 /// An infinite source that produces one of a selection of test waveforms.
 #[derive(Clone, Debug)]
-pub struct SignalGenerator<const SR: u32> {
+pub struct SignalGenerator {
     function: GeneratorFunction,
+    sample_rate: SampleRate,
     phase_step: f32,
     phase: f32,
 }
 
-impl<const SR: u32> SignalGenerator<SR> {
-    pub const fn new(frequency: f32, f: Function) -> Self {
+impl SignalGenerator {
+    pub const fn new(frequency: f32, f: Function, sample_rate: SampleRate) -> Self {
         let function: GeneratorFunction = match f {
-            Function::Sine => sine_signal,
-            Function::Triangle => triangle_signal,
-            Function::Square => square_signal,
-            Function::Sawtooth => sawtooth_signal,
+            Function::Sine => const_source::signal_generator::sine_signal,
+            Function::Triangle => const_source::signal_generator::triangle_signal,
+            Function::Square => const_source::signal_generator::square_signal,
+            Function::Sawtooth => const_source::signal_generator::sawtooth_signal,
         };
 
-        Self::with_function(frequency, function)
+        Self::with_function(frequency, function, sample_rate)
     }
 
-    pub const fn with_function(frequency: f32, generator_function: GeneratorFunction) -> Self {
+    pub const fn with_function(
+        frequency: f32,
+        generator_function: GeneratorFunction,
+        sample_rate: SampleRate,
+    ) -> Self {
         assert!(frequency > 0.0, "frequency must be greater than zero");
-        const { assert!(SR > 0, "Sample rate must be larger then zero") };
-        let period = SR as f32 / frequency;
+        let period = sample_rate.get() as f32 / frequency;
         let phase_step = 1.0f32 / period;
 
         SignalGenerator {
             function: generator_function,
+            sample_rate,
             phase_step,
             phase: 0.0f32,
         }
     }
 }
 
-impl<const SR: u32> Iterator for SignalGenerator<SR> {
+impl Iterator for SignalGenerator {
     type Item = f32;
 
     #[inline]
@@ -82,10 +71,18 @@ impl<const SR: u32> Iterator for SignalGenerator<SR> {
     }
 }
 
-impl<const SR: u32> ConstSource<SR, 1> for SignalGenerator<SR> {
+impl FixedSource for SignalGenerator {
     #[inline]
     fn total_duration(&self) -> Option<Duration> {
         None
+    }
+
+    fn channels(&self) -> rodio::ChannelCount {
+        nz!(1)
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        self.sample_rate
     }
 
     // TODO support try_seek (lets take classic impl will fix it up later)
@@ -94,21 +91,21 @@ impl<const SR: u32> ConstSource<SR, 1> for SignalGenerator<SR> {
 macro_rules! signal_new_type {
     ($name:ident, $function:expr) => {
         #[derive(Clone, Debug)]
-        pub struct $name<const SR: u32> {
-            inner: SignalGenerator<SR>,
+        pub struct $name {
+            inner: SignalGenerator,
         }
 
-        impl<const SR: u32> $name<SR> {
+        impl $name {
             /// The frequency of the sine.
             #[inline]
-            pub fn new(freq: f32) -> Self {
+            pub fn new(freq: f32, sample_rate: SampleRate) -> Self {
                 Self {
-                    inner: SignalGenerator::new(freq, $function),
+                    inner: SignalGenerator::new(freq, $function, sample_rate),
                 }
             }
         }
 
-        impl<const SR: u32> Iterator for $name<SR> {
+        impl Iterator for $name {
             type Item = f32;
 
             #[inline]
@@ -117,10 +114,20 @@ macro_rules! signal_new_type {
             }
         }
 
-        impl<const SR: u32> ConstSource<SR, 1> for $name<SR> {
+        impl FixedSource for $name {
             #[inline]
             fn total_duration(&self) -> Option<Duration> {
-                None
+                self.inner.total_duration()
+            }
+
+            #[inline]
+            fn channels(&self) -> rodio::ChannelCount {
+                self.inner.channels()
+            }
+
+            #[inline]
+            fn sample_rate(&self) -> SampleRate {
+                self.inner.sample_rate
             }
         }
     };
