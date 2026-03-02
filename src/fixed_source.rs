@@ -8,46 +8,51 @@ use rodio::SampleRate;
 use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
+use crate::effects::amplify::Factor;
+use crate::effects::amplify::fixed_source::Amplify;
+use crate::effects::pausable::fixed_source::Pausable;
+use crate::effects::periodic_access::fixed_source::PeriodicAccess;
+use crate::effects::stoppable::fixed_source::Stoppable;
+use crate::effects::take_duration::fixed_source::TakeDuration;
+use crate::effects::take_samples::fixed_source::TakeSamples;
+use crate::effects::with_data::fixed_source::WithData;
 
-use amplify::Amplify;
 use inspect::InspectFrame;
-use pausable::Pausable;
-use periodic_access::PeriodicAccess;
-use periodic_access::WithData;
-use stoppable::Stoppable;
 
-pub mod amplify;
 pub mod buffer;
 pub mod inspect;
-pub mod pausable;
-pub mod periodic_access;
 pub mod queue;
-pub mod stoppable;
-pub mod take;
 
 pub mod signal_generator;
 pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
 
 pub trait FixedSourceExt: FixedSource {
-    fn take_duration(self, duration: Duration) -> take::TakeDuration<Self>
+    fn take_duration(self, duration: Duration) -> TakeDuration<Self>
     where
         Self: Sized,
     {
-        take::TakeDuration::new(self, duration)
+        TakeDuration::new(self, duration)
+    }
+
+    fn take_samples(self, samples: usize) -> TakeSamples<Self>
+    where
+        Self: Sized,
+    {
+        TakeSamples::new(self, samples)
     }
 
     fn periodic_access(self, call_every: Duration, arg: fn(&mut Self)) -> PeriodicAccess<Self>
     where
         Self: Sized,
     {
-        periodic_access::PeriodicAccess::new(self, call_every, arg)
+        PeriodicAccess::new(self, call_every, arg)
     }
 
     fn with_data<D>(self, data: D) -> WithData<Self, D>
     where
         Self: Sized,
     {
-        periodic_access::WithData { inner: self, data }
+        WithData::new(self, data)
     }
 
     fn with_sample_rate(self, sample_rate: SampleRate) -> Resampler<Self>
@@ -84,34 +89,25 @@ pub trait FixedSourceExt: FixedSource {
         }
     }
 
-    fn stoppable(self) -> Stoppable<Self>
-    where
-        Self: Sized,
-    {
-        Stoppable {
-            inner: self,
-            stop: false,
-        }
-    }
-
     fn pausable(self, paused: bool) -> Pausable<Self>
     where
         Self: Sized,
     {
-        Pausable {
-            inner: self,
-            paused,
-        }
+        Pausable::new(self, paused)
     }
 
-    fn amplify(self, amplify: amplify::Factor) -> Amplify<Self>
+    fn amplify(self, factor: Factor) -> Amplify<Self>
     where
         Self: Sized,
     {
-        Amplify {
-            inner: self,
-            factor: amplify.as_linear(),
-        }
+        Amplify::new(self, factor)
+    }
+
+    fn stoppable(self) -> Stoppable<Self>
+    where
+        Self: Sized,
+    {
+        Stoppable::new(self)
     }
 
     fn inspect_frame<F: FnMut(Vec<Sample>) -> Vec<Sample>>(self, f: F) -> InspectFrame<Self, F>
@@ -165,8 +161,8 @@ impl<const SR: u32, const CH: u16> std::fmt::Display for ParameterMismatch<SR, C
 }
 
 macro_rules! add_inner_methods {
-    ($name:ident) => {
-        impl<S: crate::FixedSource> $name<S> {
+    ($name:ident$(<$t:ident>)?) => {
+        impl<S: crate::FixedSource $(,$t)?> $name<S $(,$t)?> {
             pub fn inner(&self) -> &S {
                 &self.inner
             }
@@ -181,8 +177,8 @@ macro_rules! add_inner_methods {
 }
 
 macro_rules! impl_wrapper {
-    ($name:ident) => {
-        impl<S: crate::FixedSource> crate::FixedSource for $name<S> {
+    ($name:ident$(<$t:ident>)?) => {
+        impl<S: crate::FixedSource $(,$t)?> crate::FixedSource for $name<S $(,$t)?> {
             fn channels(&self) -> rodio::ChannelCount {
                 self.inner.channels()
             }

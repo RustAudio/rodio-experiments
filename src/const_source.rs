@@ -8,24 +8,24 @@ use rodio::Sample;
 use rodio::SampleRate;
 use rodio::Source as DynamicSource; // will be renamed to this upstream
 
-// pub mod adaptor; replaced with into_fixed_source and into_const_source
-pub mod amplify;
+// pub mod adapter; replaced with into_fixed_source and into_const_source
 pub mod conversions;
 pub mod list;
 pub mod mixer;
-pub mod periodic_access;
 pub mod queue;
-pub mod take;
 
 pub mod signal_generator;
 pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
 
-use periodic_access::PeriodicAccess;
-
 use crate::const_source::conversions::channelcount::ChannelConvertor;
-use crate::const_source::periodic_access::WithData;
-use crate::const_source::take::TakeDuration;
-use crate::const_source::take::TakeSamples;
+use crate::effects::amplify::Factor;
+use crate::effects::amplify::const_source::Amplify;
+use crate::effects::pausable::const_source::Pausable;
+use crate::effects::periodic_access::const_source::PeriodicAccess;
+use crate::effects::stoppable::const_source::Stoppable;
+use crate::effects::take_duration::const_source::TakeDuration;
+use crate::effects::take_samples::const_source::TakeSamples;
+use crate::effects::with_data::const_source::WithData;
 
 pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     fn sample_rate(&self) -> SampleRate {
@@ -38,17 +38,17 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     /// This value is free to change at any time
     fn total_duration(&self) -> Option<Duration>;
 
-    fn into_dynamic_source(self) -> ConstSourceAdaptor<SR, CH, Self>
+    fn into_dynamic_source(self) -> ConstSourceAdapter<SR, CH, Self>
     where
         Self: Sized,
     {
-        ConstSourceAdaptor { inner: self }
+        ConstSourceAdapter { inner: self }
     }
-    fn into_fixed_source(self) -> ConstSourceAdaptor<SR, CH, Self>
+    fn into_fixed_source(self) -> ConstSourceAdapter<SR, CH, Self>
     where
         Self: Sized,
     {
-        ConstSourceAdaptor { inner: self }
+        ConstSourceAdapter { inner: self }
     }
 
     fn with_channel_count<const CH_OUT: u16>(self) -> ChannelConvertor<SR, CH, CH_OUT, Self>
@@ -58,21 +58,18 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         ChannelConvertor::new(self)
     }
 
-    fn take_samples(self, n: u64) -> TakeSamples<SR, CH, Self>
-    where
-        Self: Sized,
-    {
-        TakeSamples {
-            inner: self,
-            left: n,
-        }
-    }
-
     fn take_duration(self, duration: Duration) -> TakeDuration<SR, CH, Self>
     where
         Self: Sized,
     {
         TakeDuration::new(self, duration)
+    }
+
+    fn take_samples(self, samples: usize) -> TakeSamples<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        TakeSamples::new(self, samples)
     }
 
     fn periodic_access(
@@ -83,26 +80,47 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     where
         Self: Sized,
     {
-        periodic_access::PeriodicAccess::new(self, call_every, arg)
+        PeriodicAccess::new(self, call_every, arg)
     }
 
     fn with_data<D>(self, data: D) -> WithData<SR, CH, Self, D>
     where
         Self: Sized,
     {
-        periodic_access::WithData { inner: self, data }
+        WithData::new(self, data)
+    }
+
+    fn amplify(self, factor: Factor) -> Amplify<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Amplify::new(self, factor)
+    }
+
+    fn stoppable(self) -> Stoppable<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Stoppable::new(self)
+    }
+
+    fn pausable(self, paused: bool) -> Pausable<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Pausable::new(self, paused)
     }
 }
 
 // we still need this. More fancy const generics will save us at some point :)
-pub struct ConstSourceAdaptor<const SR: u32, const CH: u16, S>
+pub struct ConstSourceAdapter<const SR: u32, const CH: u16, S>
 where
     S: ConstSource<SR, CH>,
 {
     inner: S,
 }
 
-impl<const SR: u32, const CH: u16, S> Iterator for ConstSourceAdaptor<SR, CH, S>
+impl<const SR: u32, const CH: u16, S> Iterator for ConstSourceAdapter<SR, CH, S>
 where
     S: ConstSource<SR, CH>,
 {
@@ -113,7 +131,7 @@ where
     }
 }
 
-impl<const SR: u32, const CH: u16, S> FixedSource for ConstSourceAdaptor<SR, CH, S>
+impl<const SR: u32, const CH: u16, S> FixedSource for ConstSourceAdapter<SR, CH, S>
 where
     S: ConstSource<SR, CH>,
 {
@@ -130,7 +148,7 @@ where
     }
 }
 
-impl<const SR: u32, const CH: u16, S> DynamicSource for ConstSourceAdaptor<SR, CH, S>
+impl<const SR: u32, const CH: u16, S> DynamicSource for ConstSourceAdapter<SR, CH, S>
 where
     S: ConstSource<SR, CH>,
 {
@@ -181,8 +199,8 @@ where
 }
 
 macro_rules! add_inner_methods {
-    ($name:ident) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>> $name<SR, CH, S> {
+    ($name:ident$(<$t:ident>)?) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> $name<SR, CH, S$(,$t)?> {
             pub fn inner(&self) -> &S {
                 &self.inner
             }
@@ -197,9 +215,9 @@ macro_rules! add_inner_methods {
 }
 
 macro_rules! impl_wrapper {
-    ($name:ident) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>> crate::ConstSource<SR, CH>
-            for $name<SR, CH, S>
+    ($name:ident$(<$t:ident>)?) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> crate::ConstSource<SR, CH>
+            for $name<SR, CH, S$(,$t)?>
         {
             fn total_duration(&self) -> Option<std::time::Duration> {
                 self.inner.total_duration()

@@ -1,8 +1,16 @@
-use rodio::{ChannelCount, Sample, SampleRate, FixedSource};
+use std::time::Duration;
 
+use rodio::{ChannelCount, FixedSource, Sample, SampleRate};
+
+use crate::effects::pausable::dynamic_source::Pausable;
+use crate::Source as DynamicSource;
 use crate::conversions::channelcount::VariableInputChannelConvertor;
 use crate::conversions::resampler::variable_input::VariableInputResampler;
-use crate::Source as DynamicSource;
+use crate::effects::amplify::Factor;
+use crate::effects::amplify::dynamic_source::Amplify;
+use crate::effects::periodic_access::dynamic_source::PeriodicAccess;
+use crate::effects::stoppable::dynamic_source::Stoppable;
+use crate::effects::with_data::dynamic_source::WithData;
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
@@ -14,6 +22,41 @@ pub trait ExtendDynamicSource {
     ) -> IntoFixedSource<Self>
     where
         Self: DynamicSource + Sized;
+
+    fn amplify(self, factor: Factor) -> Amplify<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        Amplify::new(self, factor)
+    }
+
+    fn stoppable(self) -> Stoppable<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        Stoppable::new(self)
+    }
+
+    fn pausable(self, paused: bool) -> Pausable<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        Pausable::new(self, paused)
+    }
+
+    fn periodic_access(self, call_every: Duration, arg: fn(&mut Self)) -> PeriodicAccess<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        PeriodicAccess::new(self, call_every, arg)
+    }
+
+    fn with_data<D>(self, data: D) -> WithData<Self, D>
+    where
+        Self: DynamicSource + Sized,
+    {
+        WithData::new(self, data)
+    }
 }
 
 pub struct IntoFixedSource<S: DynamicSource>(

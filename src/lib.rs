@@ -29,6 +29,7 @@ pub use rodio::wav_to_writer;
 
 pub mod const_source;
 pub mod conversions;
+pub mod dynamic_source;
 pub mod dynamic_source_ext;
 pub mod fixed_source;
 
@@ -39,4 +40,3 @@ pub use rodio::cpal;
 pub use const_source::ConstSource;
 pub use rodio::FixedSource;
 pub use rodio::Source as DynamicSource;
-

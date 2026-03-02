@@ -50,16 +50,27 @@ impl Factor {
     }
 }
 
-pure_effect! {Amplify, struct {
-    factor: f32,
-}, next(self) {
-    self.inner.next().map(|value| value * self.factor)
-},
-    pub fn test(&mut self) -> &str {
-        dbg!("")
-    },
+pure_effect! {
+    struct Amplify {
+        factor: f32,
+    }
+
+    fn next(&mut self) -> Option<Sample> {
+        self.inner.next().map(|value| value * self.factor)
+    }
+
+    fn new(source: S, factor: Factor) -> Amplify<Self> {
+        Self {
+            inner: source,
+            factor: factor.as_linear(),
+        }
+    }
 
     pub fn set_factor(&mut self, factor: Factor) {
         self.factor = factor.as_linear()
-    },
+    }
+
+    pub fn test(&self) -> &str {
+        dbg!("")
+    }
 }
