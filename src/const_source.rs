@@ -9,6 +9,7 @@ use rodio::SampleRate;
 use rodio::Source as DynamicSource; // will be renamed to this upstream
 
 // pub mod adaptor; replaced with into_fixed_source and into_const_source
+pub mod amplify;
 pub mod conversions;
 pub mod list;
 pub mod mixer;
@@ -178,3 +179,34 @@ where
         }
     }
 }
+
+macro_rules! add_inner_methods {
+    ($name:ident) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>> $name<SR, CH, S> {
+            pub fn inner(&self) -> &S {
+                &self.inner
+            }
+            pub fn inner_mut(&mut self) -> &mut S {
+                &mut self.inner
+            }
+            pub fn into_inner(self) -> S {
+                self.inner
+            }
+        }
+    };
+}
+
+macro_rules! impl_wrapper {
+    ($name:ident) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>> crate::ConstSource<SR, CH>
+            for $name<SR, CH, S>
+        {
+            fn total_duration(&self) -> Option<std::time::Duration> {
+                self.inner.total_duration()
+            }
+        }
+    };
+}
+
+pub(crate) use add_inner_methods;
+pub(crate) use impl_wrapper;

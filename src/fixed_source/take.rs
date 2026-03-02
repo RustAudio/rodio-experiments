@@ -54,7 +54,7 @@ pub struct TakeSamples<S: FixedSource> {
     pub(crate) left: u64,
 }
 
-crate::add_inner_methods!(TakeSamples<S>);
+super::add_inner_methods!(TakeSamples);
 
 impl<S: FixedSource> FixedSource for TakeSamples<S> {
     fn total_duration(&self) -> Option<std::time::Duration> {

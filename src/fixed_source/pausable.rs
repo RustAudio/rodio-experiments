@@ -7,7 +7,7 @@ pub struct Pausable<S: FixedSource> {
     pub(crate) paused: bool,
 }
 
-crate::add_inner_methods!(Pausable<S>);
+super::add_inner_methods!(Pausable);
 
 impl<S: FixedSource> Pausable<S> {
     pub fn set_paused(&mut self, paused: bool) {

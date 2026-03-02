@@ -5,7 +5,7 @@ pub struct Stoppable<S: FixedSource> {
     pub(crate) stop: bool,
 }
 
-crate::add_inner_methods!(Stoppable<S>);
+super::add_inner_methods!(Stoppable);
 
 impl<S: FixedSource> Stoppable<S> {
     pub fn stop(&mut self) {

@@ -11,7 +11,7 @@ pub struct PeriodicAccess<S: FixedSource> {
     samples_until_update: u32,
 }
 
-crate::add_inner_methods!(PeriodicAccess<S>);
+super::add_inner_methods!(PeriodicAccess);
 
 impl<S: FixedSource> PeriodicAccess<S> {
     pub(crate) fn new(source: S, update_period: Duration, access: fn(&mut S)) -> Self {

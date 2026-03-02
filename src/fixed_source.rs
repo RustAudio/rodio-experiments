@@ -163,3 +163,40 @@ impl<const SR: u32, const CH: u16> std::fmt::Display for ParameterMismatch<SR, C
         }
     }
 }
+
+macro_rules! add_inner_methods {
+    ($name:ident) => {
+        impl<S: crate::FixedSource> $name<S> {
+            pub fn inner(&self) -> &S {
+                &self.inner
+            }
+            pub fn inner_mut(&mut self) -> &mut S {
+                &mut self.inner
+            }
+            pub fn into_inner(self) -> S {
+                self.inner
+            }
+        }
+    };
+}
+
+macro_rules! impl_wrapper {
+    ($name:ident) => {
+        impl<S: crate::FixedSource> crate::FixedSource for $name<S> {
+            fn channels(&self) -> rodio::ChannelCount {
+                self.inner.channels()
+            }
+
+            fn sample_rate(&self) -> rodio::SampleRate {
+                self.inner.sample_rate()
+            }
+
+            fn total_duration(&self) -> Option<std::time::Duration> {
+                self.inner.total_duration()
+            }
+        }
+    };
+}
+
+pub(crate) use add_inner_methods;
+pub(crate) use impl_wrapper;
