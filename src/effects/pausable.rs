@@ -1,6 +1,7 @@
 use super::pure_effect;
 
 pure_effect! {
+    supports_dynamic_source
     struct Pausable {
         paused: bool,
     }

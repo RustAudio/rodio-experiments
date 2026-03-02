@@ -3,6 +3,7 @@ use std::time::Duration;
 use crate::effects::pure_effect;
 
 pure_effect! {
+    supports_dynamic_source
     struct PeriodicAccess {
         access: fn(&mut S),
         update_period: u32, // in samples

@@ -51,6 +51,7 @@ impl Factor {
 }
 
 pure_effect! {
+    supports_dynamic_source
     struct Amplify {
         factor: f32,
     }

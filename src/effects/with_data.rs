@@ -1,6 +1,7 @@
 use crate::effects::pure_effect;
 
 pure_effect! {
+    supports_dynamic_source
     struct WithData<D> {
         data: D,
     }
