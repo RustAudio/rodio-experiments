@@ -9,6 +9,7 @@ use rodio::SampleRate;
 use rodio::Source as DynamicSource; // will be renamed to this upstream
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
+pub mod buffer;
 pub mod conversions;
 pub mod list;
 pub mod mixer;
@@ -17,6 +18,7 @@ pub mod queue;
 pub mod signal_generator;
 pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
 
+use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::amplify::const_source::Amplify;
@@ -120,6 +122,13 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         InspectFrame::new(self, f)
+    }
+
+    fn collect_into_buffer(self) -> SamplesBuffer<SR, CH>
+    where
+        Self: Sized,
+    {
+        SamplesBuffer::new(self.collect::<Vec<_>>())
     }
 }
 

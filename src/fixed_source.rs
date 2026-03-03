@@ -17,6 +17,7 @@ use crate::effects::stoppable::fixed_source::Stoppable;
 use crate::effects::take_duration::fixed_source::TakeDuration;
 use crate::effects::take_samples::fixed_source::TakeSamples;
 use crate::effects::with_data::fixed_source::WithData;
+use crate::fixed_source::buffer::SamplesBuffer;
 
 pub mod buffer;
 pub mod queue;
@@ -113,6 +114,17 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         InspectFrame::new(self, f)
+    }
+
+    fn collect_into_buffer(self) -> SamplesBuffer
+    where
+        Self: Sized,
+    {
+        SamplesBuffer::new(
+            self.channels(),
+            self.sample_rate(),
+            self.collect::<Vec<_>>(),
+        )
     }
 }
 
