@@ -15,9 +15,6 @@ pub mod list;
 pub mod mixer;
 pub mod queue;
 
-pub mod signal_generator;
-pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
-
 use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;

@@ -20,6 +20,10 @@
           buildInputs = with pkgs; [] ++ lib.optionals pkgs.stdenv.isLinux [
             alsa-lib
           ];
+
+		  packages = [
+			pkgs.cargo-expand
+		  ];
         };
       }
     );

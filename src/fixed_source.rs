@@ -22,9 +22,6 @@ use crate::fixed_source::buffer::SamplesBuffer;
 pub mod buffer;
 pub mod queue;
 
-pub mod signal_generator;
-pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
-
 pub trait FixedSourceExt: FixedSource {
     fn take_duration(self, duration: Duration) -> TakeDuration<Self>
     where
