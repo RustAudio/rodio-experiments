@@ -1,4 +1,5 @@
 pub mod amplify;
+pub mod inspect;
 pub mod pausable;
 pub mod periodic_access;
 pub mod stoppable;
@@ -11,7 +12,7 @@ pub mod with_data;
 macro_rules! pure_effect {
     (
     supports_dynamic_source
-    struct $name:ident$(<$t:ident>)? {
+    struct $name:ident$(<$t:ident$(:$bound:path)?>)? {
         $($field:ident: $field_ty:ty,)*
     }
     // like `struct` above the `fn`, `&mut` and `-> Option<Sample>` are just there
@@ -22,16 +23,16 @@ macro_rules! pure_effect {
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
         pub mod dynamic_source {
-            pub struct $name<S$(,$t)?> {
+            pub struct $name<S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }
 
-            crate::dynamic_source::add_inner_methods!{$name$(<$t>)?}
-            crate::dynamic_source::impl_wrapper!{$name$(<$t>)?}
+            crate::dynamic_source::add_inner_methods!{$name$(<$t$(:$bound)?>)?}
+            crate::dynamic_source::impl_wrapper!{$name$(<$t$(:$bound)?>)?}
         }
 
-        impl<S: crate::Source$(,$t)?> dynamic_source::$name<S$(,$t)?> {
+        impl<S: crate::Source$(,$t$(:$bound)?)?> dynamic_source::$name<S$(,$t)?> {
             #[must_use]
             pub(crate) fn new($($factory_args)*) -> dynamic_source::$name<S$(,$t)?> {
                 $factory_body
@@ -39,7 +40,7 @@ macro_rules! pure_effect {
             $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
-        impl<S: crate::Source$(,$t)?> Iterator for dynamic_source::$name<S$(,$t)?> {
+        impl<S: crate::Source$(,$t$(:$bound)?)?> Iterator for dynamic_source::$name<S$(,$t)?> {
             type Item = crate::Sample;
 
             fn next(&mut $self) -> Option<Self::Item> {
@@ -48,7 +49,7 @@ macro_rules! pure_effect {
         }
 
         crate::effects::inner!{
-            struct $name$(<$t>)? {
+            struct $name$(<$t$(:$bound)?>)? {
                 $($field: $field_ty,)*
             }
             fn next(&mut $self) -> Option<Sample> $body
@@ -58,7 +59,7 @@ macro_rules! pure_effect {
     };
 
     (
-    struct $name:ident$(<$t:ident>)? {
+    struct $name:ident$(<$t:ident$(:$bound:path)?>)? {
         $($field:ident: $field_ty:ty,)*
     }
     // like `struct` above the `fn`, `&mut` and `-> Option<Sample>` are just there
@@ -69,7 +70,7 @@ macro_rules! pure_effect {
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
         crate::effects::inner!{
-            struct $name$(<$t>)? {
+            struct $name$(<$t$(:$bound)?>)? {
                 $($field: $field_ty,)*
             }
             fn next(&mut $self) -> Option<Sample> $body
@@ -81,7 +82,7 @@ macro_rules! pure_effect {
 
 macro_rules! inner {
 (
-    struct $name:ident$(<$t:ident>)? {
+    struct $name:ident$(<$t:ident$(:$bound:path)?>)? {
         $($field:ident: $field_ty:ty,)*
     }
     // like `struct` above the `fn`, `&mut` and `-> Option<Sample>` are just there
@@ -92,16 +93,16 @@ macro_rules! inner {
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) =>  {
         pub mod fixed_source {
-            pub struct $name<S$(,$t)?> {
+            pub struct $name<S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }
 
-            crate::fixed_source::add_inner_methods!{$name$(<$t>)?}
-            crate::fixed_source::impl_wrapper!{$name$(<$t>)?}
+            crate::fixed_source::add_inner_methods!{$name$(<$t$(:$bound)?>)?}
+            crate::fixed_source::impl_wrapper!{$name$(<$t$(:$bound)?>)?}
         }
 
-        impl<S: crate::FixedSource$(,$t)?> fixed_source::$name<S$(,$t)?> {
+        impl<S: crate::FixedSource$(,$t$(:$bound)?)?> fixed_source::$name<S$(,$t)?> {
             #[must_use]
             pub(crate) fn new($($factory_args)*) -> fixed_source::$name<S$(,$t)?> {
                 $factory_body
@@ -109,7 +110,7 @@ macro_rules! inner {
             $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
-        impl<S: crate::FixedSource$(,$t)?> Iterator for fixed_source::$name<S$(,$t)?> {
+        impl<S: crate::FixedSource$(,$t$(:$bound)?)?> Iterator for fixed_source::$name<S$(,$t)?> {
             type Item = crate::Sample;
 
             fn next(&mut $self) -> Option<Self::Item> {
@@ -118,16 +119,16 @@ macro_rules! inner {
         }
 
         pub mod const_source {
-            pub struct $name<const SR: u32, const CH: u16, S$(,$t)?> {
+            pub struct $name<const SR: u32, const CH: u16, S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }
 
-            crate::const_source::add_inner_methods!{$name$(<$t>)?}
-            crate::const_source::impl_wrapper!{$name$(<$t>)?}
+            crate::const_source::add_inner_methods!{$name$(<$t$(:$bound)?>)?}
+            crate::const_source::impl_wrapper!{$name$(<$t$(:$bound)?>)?}
         }
 
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> const_source::$name<SR, CH, S$(,$t)?> {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> const_source::$name<SR, CH, S$(,$t)?> {
             #[must_use]
             pub(crate) fn new($($factory_args)*) -> const_source::$name<SR, CH, S$(,$t)?> {
                 $factory_body
@@ -135,7 +136,7 @@ macro_rules! inner {
             $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> Iterator for const_source::$name<SR, CH, S$(,$t)?> {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> Iterator for const_source::$name<SR, CH, S$(,$t)?> {
             type Item = crate::Sample;
 
             fn next(&mut $self) -> Option<Self::Item> {

@@ -10,6 +10,7 @@ use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::amplify::fixed_source::Amplify;
+use crate::effects::inspect::fixed_source::InspectFrame;
 use crate::effects::pausable::fixed_source::Pausable;
 use crate::effects::periodic_access::fixed_source::PeriodicAccess;
 use crate::effects::stoppable::fixed_source::Stoppable;
@@ -17,10 +18,7 @@ use crate::effects::take_duration::fixed_source::TakeDuration;
 use crate::effects::take_samples::fixed_source::TakeSamples;
 use crate::effects::with_data::fixed_source::WithData;
 
-use inspect::InspectFrame;
-
 pub mod buffer;
-pub mod inspect;
 pub mod queue;
 
 pub mod signal_generator;
@@ -161,8 +159,8 @@ impl<const SR: u32, const CH: u16> std::fmt::Display for ParameterMismatch<SR, C
 }
 
 macro_rules! add_inner_methods {
-    ($name:ident$(<$t:ident>)?) => {
-        impl<S: crate::FixedSource $(,$t)?> $name<S $(,$t)?> {
+    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
+        impl<S: crate::FixedSource $(,$t$(:$bound)?)?> $name<S $(,$t)?> {
             pub fn inner(&self) -> &S {
                 &self.inner
             }
@@ -177,8 +175,8 @@ macro_rules! add_inner_methods {
 }
 
 macro_rules! impl_wrapper {
-    ($name:ident$(<$t:ident>)?) => {
-        impl<S: crate::FixedSource $(,$t)?> crate::FixedSource for $name<S $(,$t)?> {
+    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
+        impl<S: crate::FixedSource $(,$t$(:$bound)?)?> crate::FixedSource for $name<S $(,$t)?> {
             fn channels(&self) -> rodio::ChannelCount {
                 self.inner.channels()
             }

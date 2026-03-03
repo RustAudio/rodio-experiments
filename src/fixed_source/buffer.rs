@@ -48,6 +48,7 @@ impl SamplesBuffer {
         }
     }
 }
+
 impl FixedSource for SamplesBuffer {
     #[inline]
     fn channels(&self) -> ChannelCount {

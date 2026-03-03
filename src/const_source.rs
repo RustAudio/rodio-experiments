@@ -20,6 +20,7 @@ pub use signal_generator::{SawtoothWave, SineWave, SquareWave, TriangleWave};
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::amplify::const_source::Amplify;
+use crate::effects::inspect::const_source::InspectFrame;
 use crate::effects::pausable::const_source::Pausable;
 use crate::effects::periodic_access::const_source::PeriodicAccess;
 use crate::effects::stoppable::const_source::Stoppable;
@@ -110,6 +111,16 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     {
         Pausable::new(self, paused)
     }
+
+    fn inspect_frame<F: FnMut(Vec<Sample>) -> Vec<Sample>>(
+        self,
+        f: F,
+    ) -> InspectFrame<SR, CH, Self, F>
+    where
+        Self: Sized,
+    {
+        InspectFrame::new(self, f)
+    }
 }
 
 // we still need this. More fancy const generics will save us at some point :)
@@ -199,8 +210,8 @@ where
 }
 
 macro_rules! add_inner_methods {
-    ($name:ident$(<$t:ident>)?) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> $name<SR, CH, S$(,$t)?> {
+    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> $name<SR, CH, S$(,$t)?> {
             pub fn inner(&self) -> &S {
                 &self.inner
             }
@@ -215,8 +226,8 @@ macro_rules! add_inner_methods {
 }
 
 macro_rules! impl_wrapper {
-    ($name:ident$(<$t:ident>)?) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t)?> crate::ConstSource<SR, CH>
+    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> crate::ConstSource<SR, CH>
             for $name<SR, CH, S$(,$t)?>
         {
             fn total_duration(&self) -> Option<std::time::Duration> {
