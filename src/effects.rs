@@ -1,12 +1,45 @@
 pub mod amplify;
 pub mod automatic_gain_control;
-pub mod inspect;
-pub mod pausable;
-pub mod periodic_access;
-pub mod stoppable;
-pub mod take_duration;
-pub mod take_samples;
-pub mod with_data;
+mod inspect;
+mod pausable;
+mod periodic_access;
+mod stoppable;
+mod take_duration;
+mod take_samples;
+mod with_data;
+
+// we can only get the structure: effects::effect::source_type::Struct with a macro
+// so we re-export the structs here to get the nicer structure:
+// effects::source_type::Struct;
+pub mod fixed_source {
+    pub use super::amplify::fixed_source::Amplify;
+    pub use super::automatic_gain_control::fixed_source::AutomaticGainControl;
+    pub use super::inspect::fixed_source::InspectFrame;
+    pub use super::pausable::fixed_source::Pausable;
+    pub use super::periodic_access::fixed_source::PeriodicAccess;
+    pub use super::stoppable::fixed_source::Stoppable;
+    pub use super::take_duration::fixed_source::TakeDuration;
+    pub use super::take_samples::fixed_source::TakeSamples;
+    pub use super::with_data::fixed_source::WithData;
+}
+pub mod const_source {
+    pub use super::amplify::const_source::Amplify;
+    pub use super::automatic_gain_control::const_source::AutomaticGainControl;
+    pub use super::inspect::const_source::InspectFrame;
+    pub use super::pausable::const_source::Pausable;
+    pub use super::periodic_access::const_source::PeriodicAccess;
+    pub use super::stoppable::const_source::Stoppable;
+    pub use super::take_duration::const_source::TakeDuration;
+    pub use super::take_samples::const_source::TakeSamples;
+    pub use super::with_data::const_source::WithData;
+}
+pub mod dynamic_source {
+    pub use super::amplify::dynamic_source::Amplify;
+    pub use super::pausable::dynamic_source::Pausable;
+    pub use super::periodic_access::dynamic_source::PeriodicAccess;
+    pub use super::stoppable::dynamic_source::Stoppable;
+    pub use super::with_data::dynamic_source::WithData;
+}
 
 /// Note: methods taking &mut self must have mut ref as a prefix, they must be
 /// specified before methods taking &self
@@ -23,7 +56,7 @@ macro_rules! pure_effect {
     // mm stands for mutable method
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
-        pub mod dynamic_source {
+        pub(crate) mod dynamic_source {
             #[allow(unused)]
             use super::*;
             pub struct $name<S$(,$t$(:$bound)?)?> {
@@ -98,7 +131,7 @@ macro_rules! inner {
     // mm stands for mutable method
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) =>  {
-        pub mod fixed_source {
+        pub(crate) mod fixed_source {
             #[allow(unused)]
             use super::*;
 
@@ -129,7 +162,7 @@ macro_rules! inner {
             }
         }
 
-        pub mod const_source {
+        pub(crate) mod const_source {
             #[allow(unused)]
             use super::*;
 

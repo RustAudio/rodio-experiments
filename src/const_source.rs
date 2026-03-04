@@ -18,16 +18,11 @@ pub mod queue;
 use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
-use crate::effects::amplify::const_source::Amplify;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
-use crate::effects::automatic_gain_control::const_source::AutomaticGainControl;
-use crate::effects::inspect::const_source::InspectFrame;
-use crate::effects::pausable::const_source::Pausable;
-use crate::effects::periodic_access::const_source::PeriodicAccess;
-use crate::effects::stoppable::const_source::Stoppable;
-use crate::effects::take_duration::const_source::TakeDuration;
-use crate::effects::take_samples::const_source::TakeSamples;
-use crate::effects::with_data::const_source::WithData;
+use crate::effects::const_source::{
+    Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
+    TakeSamples, WithData,
+};
 
 pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     fn sample_rate(&self) -> SampleRate {
@@ -243,6 +238,8 @@ macro_rules! add_inner_methods {
     };
 }
 
+pub(crate) use add_inner_methods;
+
 macro_rules! impl_wrapper {
     ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
         impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> crate::ConstSource<SR, CH>
@@ -254,6 +251,4 @@ macro_rules! impl_wrapper {
         }
     };
 }
-
-pub(crate) use add_inner_methods;
 pub(crate) use impl_wrapper;

@@ -2,15 +2,11 @@ use std::time::Duration;
 
 use rodio::{ChannelCount, FixedSource, Sample, SampleRate};
 
-use crate::effects::pausable::dynamic_source::Pausable;
 use crate::Source as DynamicSource;
 use crate::conversions::channelcount::VariableInputChannelConvertor;
 use crate::conversions::resampler::variable_input::VariableInputResampler;
 use crate::effects::amplify::Factor;
-use crate::effects::amplify::dynamic_source::Amplify;
-use crate::effects::periodic_access::dynamic_source::PeriodicAccess;
-use crate::effects::stoppable::dynamic_source::Stoppable;
-use crate::effects::with_data::dynamic_source::WithData;
+use crate::effects::dynamic_source::{Pausable, PeriodicAccess, Stoppable, WithData, Amplify};
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.

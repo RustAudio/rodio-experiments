@@ -9,16 +9,11 @@ use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
-use crate::effects::amplify::fixed_source::Amplify;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
-use crate::effects::automatic_gain_control::fixed_source::AutomaticGainControl;
-use crate::effects::inspect::fixed_source::InspectFrame;
-use crate::effects::pausable::fixed_source::Pausable;
-use crate::effects::periodic_access::fixed_source::PeriodicAccess;
-use crate::effects::stoppable::fixed_source::Stoppable;
-use crate::effects::take_duration::fixed_source::TakeDuration;
-use crate::effects::take_samples::fixed_source::TakeSamples;
-use crate::effects::with_data::fixed_source::WithData;
+use crate::effects::fixed_source::{
+    Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
+    TakeSamples, WithData,
+};
 use crate::fixed_source::buffer::SamplesBuffer;
 
 pub mod buffer;
@@ -195,6 +190,8 @@ macro_rules! add_inner_methods {
     };
 }
 
+pub(crate) use add_inner_methods;
+
 macro_rules! impl_wrapper {
     ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
         impl<S: crate::FixedSource $(,$t$(:$bound)?)?> crate::FixedSource for $name<S $(,$t)?> {
@@ -212,6 +209,4 @@ macro_rules! impl_wrapper {
         }
     };
 }
-
-pub(crate) use add_inner_methods;
 pub(crate) use impl_wrapper;
