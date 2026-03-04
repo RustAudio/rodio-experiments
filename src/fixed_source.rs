@@ -10,6 +10,8 @@ use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::amplify::fixed_source::Amplify;
+use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
+use crate::effects::automatic_gain_control::fixed_source::AutomaticGainControl;
 use crate::effects::inspect::fixed_source::InspectFrame;
 use crate::effects::pausable::fixed_source::Pausable;
 use crate::effects::periodic_access::fixed_source::PeriodicAccess;
@@ -111,6 +113,16 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         InspectFrame::new(self, f)
+    }
+
+    fn automatic_gain_control(
+        self,
+        settings: AutomaticGainControlSettings,
+    ) -> AutomaticGainControl<Self>
+    where
+        Self: Sized,
+    {
+        AutomaticGainControl::new(self, settings)
     }
 
     fn collect_into_buffer(self) -> SamplesBuffer

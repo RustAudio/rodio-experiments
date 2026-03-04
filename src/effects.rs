@@ -1,4 +1,5 @@
 pub mod amplify;
+pub mod automatic_gain_control;
 pub mod inspect;
 pub mod pausable;
 pub mod periodic_access;
@@ -23,6 +24,8 @@ macro_rules! pure_effect {
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
         pub mod dynamic_source {
+            #[allow(unused)]
+            use super::*;
             pub struct $name<S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
@@ -47,6 +50,9 @@ macro_rules! pure_effect {
                 $body
             }
         }
+
+
+        impl<S: crate::Source$(,$t$(:$bound)?)?> ExactSizeIterator for dynamic_source::$name<S$(,$t)?> where S: ExactSizeIterator {}
 
         crate::effects::inner!{
             struct $name$(<$t$(:$bound)?>)? {
@@ -93,6 +99,9 @@ macro_rules! inner {
     $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) =>  {
         pub mod fixed_source {
+            #[allow(unused)]
+            use super::*;
+
             pub struct $name<S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
@@ -110,6 +119,8 @@ macro_rules! inner {
             $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
+        impl<S: crate::FixedSource$(,$t$(:$bound)?)?> ExactSizeIterator for fixed_source::$name<S$(,$t)?> where S: ExactSizeIterator {}
+
         impl<S: crate::FixedSource$(,$t$(:$bound)?)?> Iterator for fixed_source::$name<S$(,$t)?> {
             type Item = crate::Sample;
 
@@ -119,6 +130,9 @@ macro_rules! inner {
         }
 
         pub mod const_source {
+            #[allow(unused)]
+            use super::*;
+
             pub struct $name<const SR: u32, const CH: u16, S$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
@@ -135,6 +149,9 @@ macro_rules! inner {
             }
             $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
+
+
+        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?>  ExactSizeIterator for const_source::$name<SR, CH, S$(,$t)?> where S: ExactSizeIterator {}
 
         impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> Iterator for const_source::$name<SR, CH, S$(,$t)?> {
             type Item = crate::Sample;

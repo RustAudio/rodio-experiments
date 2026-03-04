@@ -19,6 +19,8 @@ use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::amplify::const_source::Amplify;
+use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
+use crate::effects::automatic_gain_control::const_source::AutomaticGainControl;
 use crate::effects::inspect::const_source::InspectFrame;
 use crate::effects::pausable::const_source::Pausable;
 use crate::effects::periodic_access::const_source::PeriodicAccess;
@@ -126,6 +128,16 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         SamplesBuffer::new(self.collect::<Vec<_>>())
+    }
+
+    fn automatic_gain_control(
+        self,
+        settings: AutomaticGainControlSettings,
+    ) -> AutomaticGainControl<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        AutomaticGainControl::new(self, settings)
     }
 }
 

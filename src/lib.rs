@@ -7,14 +7,12 @@
 
 // use rodio::{ChannelCount, Sample, SampleRate, Source, source::SineWave};
 pub use rodio::buffer;
-pub use rodio::nz;
 pub use rodio::{BitDepth, ChannelCount, Float, Sample, SampleRate};
 // pub use rodio::conversions;
 pub use rodio::Player;
 pub use rodio::SpatialPlayer;
 pub use rodio::decoder;
 pub use rodio::decoder::Decoder;
-pub use rodio::math;
 pub use rodio::microphone;
 pub use rodio::mixer;
 pub use rodio::queue;
@@ -36,6 +34,9 @@ pub mod fixed_source;
 pub mod effects;
 pub mod signal_generator;
 pub mod noise;
+
+pub mod common;
+pub mod math;
 
 pub use rodio::cpal;
 
