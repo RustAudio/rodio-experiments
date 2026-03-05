@@ -1,5 +1,6 @@
 pub mod amplify;
 pub mod automatic_gain_control;
+pub mod limiter;
 mod inspect;
 mod pausable;
 mod periodic_access;
@@ -21,6 +22,7 @@ pub mod fixed_source {
     pub use super::take_duration::fixed_source::TakeDuration;
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
+    pub use super::limiter::fixed_source::Limit;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
@@ -32,6 +34,7 @@ pub mod const_source {
     pub use super::take_duration::const_source::TakeDuration;
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
+    pub use super::limiter::const_source::Limit;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
@@ -59,7 +62,7 @@ macro_rules! pure_effect {
         pub(crate) mod dynamic_source {
             #[allow(unused)]
             use super::*;
-            pub struct $name<S$(,$t$(:$bound)?)?> {
+            pub struct $name<S: crate::DynamicSource$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }
@@ -135,7 +138,7 @@ macro_rules! inner {
             #[allow(unused)]
             use super::*;
 
-            pub struct $name<S$(,$t$(:$bound)?)?> {
+            pub struct $name<S: crate::FixedSource$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }
@@ -166,7 +169,8 @@ macro_rules! inner {
             #[allow(unused)]
             use super::*;
 
-            pub struct $name<const SR: u32, const CH: u16, S$(,$t$(:$bound)?)?> {
+            pub struct $name<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>
+                $(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
             }

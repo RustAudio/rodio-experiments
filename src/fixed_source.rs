@@ -10,10 +10,12 @@ use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
+use crate::effects::fixed_source::Limit;
 use crate::effects::fixed_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
 };
+use crate::effects::limiter::LimitSettings;
 use crate::fixed_source::buffer::SamplesBuffer;
 
 pub mod buffer;
@@ -129,6 +131,13 @@ pub trait FixedSourceExt: FixedSource {
             self.sample_rate(),
             self.collect::<Vec<_>>(),
         )
+    }
+
+    fn limit(self, settings: LimitSettings) -> Limit<Self>
+    where
+        Self: Sized,
+    {
+        Limit::new(self, settings)
     }
 }
 

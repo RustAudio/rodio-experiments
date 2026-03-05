@@ -19,10 +19,12 @@ use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
+use crate::effects::const_source::Limit;
 use crate::effects::const_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
 };
+use crate::effects::limiter::LimitSettings;
 
 pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     fn sample_rate(&self) -> SampleRate {
@@ -133,6 +135,13 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         AutomaticGainControl::new(self, settings)
+    }
+
+    fn limit(self, settings: LimitSettings) -> Limit<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Limit::new(self, settings)
     }
 }
 
