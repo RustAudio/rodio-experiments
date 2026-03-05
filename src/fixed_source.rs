@@ -1,9 +1,11 @@
 use std::time::Duration;
 
-use rodio::ChannelCount;
-use rodio::FixedSource;
-use rodio::Sample;
-use rodio::SampleRate;
+use crate::ChannelCount;
+use crate::FixedSource;
+use crate::Float;
+use crate::Sample;
+use crate::SampleRate;
+use crate::effects::blt::BltFormula;
 
 use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
@@ -11,6 +13,7 @@ use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::fixed_source::Limit;
+use crate::effects::fixed_source::BltFilter;
 use crate::effects::fixed_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
@@ -138,6 +141,34 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         Limit::new(self, settings)
+    }
+
+    fn low_pass(self, freq: u32) -> BltFilter<Self>
+    where
+        Self: Sized,
+    {
+        BltFilter::new(self, BltFormula::LowPass { freq, q: 0.5 })
+    }
+
+    fn high_pass(self, freq: u32) -> BltFilter<Self>
+    where
+        Self: Sized,
+    {
+        BltFilter::new(self, BltFormula::HighPass { freq, q: 0.5 })
+    }
+
+    fn low_pass_with_q(self, freq: u32, q: Float) -> BltFilter<Self>
+    where
+        Self: Sized,
+    {
+        BltFilter::new(self, BltFormula::LowPass { freq, q })
+    }
+
+    fn high_pass_with_q(self, freq: u32, q: Float) -> BltFilter<Self>
+    where
+        Self: Sized,
+    {
+        BltFilter::new(self, BltFormula::HighPass { freq, q })
     }
 }
 

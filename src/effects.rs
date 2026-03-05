@@ -1,6 +1,7 @@
 pub mod amplify;
 pub mod automatic_gain_control;
 pub mod limiter;
+pub mod blt;
 mod inspect;
 mod pausable;
 mod periodic_access;
@@ -23,6 +24,7 @@ pub mod fixed_source {
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
     pub use super::limiter::fixed_source::Limit;
+    pub use super::blt::fixed_source::BltFilter;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
@@ -35,6 +37,7 @@ pub mod const_source {
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
     pub use super::limiter::const_source::Limit;
+    pub use super::blt::const_source::BltFilter;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
