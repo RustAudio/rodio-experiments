@@ -2,6 +2,7 @@ pub mod amplify;
 pub mod automatic_gain_control;
 pub mod limiter;
 pub mod blt;
+mod fades;
 mod inspect;
 mod pausable;
 mod periodic_access;
@@ -16,6 +17,10 @@ mod with_data;
 pub mod fixed_source {
     pub use super::amplify::fixed_source::Amplify;
     pub use super::automatic_gain_control::fixed_source::AutomaticGainControl;
+    pub use super::blt::fixed_source::BltFilter;
+    pub use super::fades::fade_in::fixed_source::FadeIn;
+    pub use super::fades::fade_out::fixed_source::FadeOut;
+    pub use super::fades::linear_ramp::fixed_source::LinearGainRamp;
     pub use super::inspect::fixed_source::InspectFrame;
     pub use super::pausable::fixed_source::Pausable;
     pub use super::periodic_access::fixed_source::PeriodicAccess;
@@ -24,11 +29,14 @@ pub mod fixed_source {
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
     pub use super::limiter::fixed_source::Limit;
-    pub use super::blt::fixed_source::BltFilter;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
     pub use super::automatic_gain_control::const_source::AutomaticGainControl;
+    pub use super::blt::const_source::BltFilter;
+    pub use super::fades::fade_in::const_source::FadeIn;
+    pub use super::fades::fade_out::const_source::FadeOut;
+    pub use super::fades::linear_ramp::const_source::LinearGainRamp;
     pub use super::inspect::const_source::InspectFrame;
     pub use super::pausable::const_source::Pausable;
     pub use super::periodic_access::const_source::PeriodicAccess;
@@ -37,10 +45,12 @@ pub mod const_source {
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
     pub use super::limiter::const_source::Limit;
-    pub use super::blt::const_source::BltFilter;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
+    pub use super::fades::fade_in::dynamic_source::FadeIn;
+    pub use super::fades::fade_out::dynamic_source::FadeOut;
+    pub use super::fades::linear_ramp::dynamic_source::LinearGainRamp;
     pub use super::pausable::dynamic_source::Pausable;
     pub use super::periodic_access::dynamic_source::PeriodicAccess;
     pub use super::stoppable::dynamic_source::Stoppable;

@@ -1,11 +1,14 @@
 use std::time::Duration;
 
+use crate::effects::fixed_source::LinearGainRamp;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::effects::blt::BltFormula;
+use crate::effects::fixed_source::FadeIn;
+use crate::effects::fixed_source::FadeOut;
 
 use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
@@ -169,6 +172,41 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         BltFilter::new(self, BltFormula::HighPass { freq, q })
+    }
+
+    /// Fades in the sound.
+    #[inline]
+    fn fade_in(self, duration: Duration) -> FadeIn<Self>
+    where
+        Self: Sized,
+    {
+        FadeIn::new(self, duration)
+    }
+
+    /// Fades out the sound.
+    #[inline]
+    fn fade_out(self, duration: Duration) -> FadeOut<Self>
+    where
+        Self: Sized,
+    {
+        FadeOut::new(self, duration)
+    }
+    /// Applies a linear gain ramp to the sound.
+    ///
+    /// If `clamp_end` is `true`, all samples subsequent to the end of the ramp
+    /// will be scaled by the `end_value`. If `clamp_end` is `false`, all
+    /// subsequent samples will not have any scaling applied.
+    fn linear_gain_ramp(
+        self,
+        duration: Duration,
+        start_value: Float,
+        end_value: Float,
+        clamp_end: bool,
+    ) -> LinearGainRamp<Self>
+    where
+        Self: Sized,
+    {
+        LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
     }
 }
 

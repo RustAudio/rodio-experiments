@@ -4,10 +4,13 @@ use std::time::Duration;
 
 use crate::ChannelCount;
 use crate::FixedSource;
+use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
-use crate::Float;
+use crate::effects::const_source::FadeIn;
+use crate::effects::const_source::FadeOut;
+use crate::effects::const_source::LinearGainRamp;
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
 pub mod buffer;
@@ -173,6 +176,38 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         BltFilter::new(self, BltFormula::HighPass { freq, q })
+    }
+    /// Fades in the sound.
+    fn fade_in(self, duration: Duration) -> FadeIn<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        FadeIn::new(self, duration)
+    }
+
+    /// Fades out the sound.
+    fn fade_out(self, duration: Duration) -> FadeOut<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        FadeOut::new(self, duration)
+    }
+    /// Applies a linear gain ramp to the sound.
+    ///
+    /// If `clamp_end` is `true`, all samples subsequent to the end of the ramp
+    /// will be scaled by the `end_value`. If `clamp_end` is `false`, all
+    /// subsequent samples will not have any scaling applied.
+    fn linear_gain_ramp(
+        self,
+        duration: Duration,
+        start_value: Float,
+        end_value: Float,
+        clamp_end: bool,
+    ) -> LinearGainRamp<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
     }
 }
 
