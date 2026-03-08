@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::ConstSource;
-use crate::signal_generator::{Function, GeneratorFunction};
+use crate::generators::function::{Function, GeneratorFunction};
 
 use super::{sawtooth_signal, sine_signal, square_signal, triangle_signal};
 

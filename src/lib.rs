@@ -32,9 +32,8 @@ pub mod dynamic_source_ext;
 pub mod fixed_source;
 
 pub mod effects;
-pub mod signal_generator;
-pub mod noise;
-pub mod chirp;
+mod generators;
+pub use generators::{function, noise, chirp};
 
 pub mod common;
 pub mod math;
