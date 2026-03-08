@@ -11,6 +11,7 @@ mod take_duration;
 mod take_samples;
 mod with_data;
 mod distortion;
+mod dither;
 
 // we can only get the structure: effects::effect::source_type::Struct with a macro
 // so we re-export the structs here to get the nicer structure:

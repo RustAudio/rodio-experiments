@@ -34,6 +34,7 @@ pub mod fixed_source;
 pub mod effects;
 pub mod signal_generator;
 pub mod noise;
+pub mod chirp;
 
 pub mod common;
 pub mod math;
