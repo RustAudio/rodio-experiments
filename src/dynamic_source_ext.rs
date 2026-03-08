@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use rodio::{ChannelCount, FixedSource, Sample, SampleRate};
 
-use crate::effects::dynamic_source::Distortion;
 use crate::Float;
 use crate::Source as DynamicSource;
 use crate::conversions::channelcount::VariableInputChannelConvertor;
 use crate::conversions::resampler::variable_input::VariableInputResampler;
 use crate::effects::amplify::Factor;
+use crate::effects::dynamic_source::Distortion;
 use crate::effects::dynamic_source::{
     Amplify, FadeIn, FadeOut, LinearGainRamp, Pausable, PeriodicAccess, Stoppable, WithData,
 };
@@ -27,6 +27,7 @@ pub trait ExtendDynamicSource {
     where
         Self: DynamicSource + Sized;
 
+    #[doc = include_str!("effects/amplify.md")]
     fn amplify(self, factor: Factor) -> Amplify<Self>
     where
         Self: DynamicSource + Sized,
@@ -34,6 +35,7 @@ pub trait ExtendDynamicSource {
         Amplify::new(self, factor)
     }
 
+    #[doc = include_str!("effects/stoppable.md")]
     fn stoppable(self) -> Stoppable<Self>
     where
         Self: DynamicSource + Sized,
@@ -41,6 +43,7 @@ pub trait ExtendDynamicSource {
         Stoppable::new(self)
     }
 
+    #[doc = include_str!("effects/pausable.md")]
     fn pausable(self, paused: bool) -> Pausable<Self>
     where
         Self: DynamicSource + Sized,
@@ -48,6 +51,7 @@ pub trait ExtendDynamicSource {
         Pausable::new(self, paused)
     }
 
+    #[doc = include_str!("effects/periodic_access.md")]
     fn periodic_access(self, call_every: Duration, arg: fn(&mut Self)) -> PeriodicAccess<Self>
     where
         Self: DynamicSource + Sized,
@@ -55,6 +59,7 @@ pub trait ExtendDynamicSource {
         PeriodicAccess::new(self, call_every, arg)
     }
 
+    #[doc = include_str!("effects/with_data.md")]
     fn with_data<D>(self, data: D) -> WithData<Self, D>
     where
         Self: DynamicSource + Sized,
@@ -62,6 +67,7 @@ pub trait ExtendDynamicSource {
         WithData::new(self, data)
     }
     /// Fades in the sound.
+    #[doc = include_str!("effects/fade_in.md")]
     fn fade_in(self, duration: Duration) -> FadeIn<Self>
     where
         Self: DynamicSource + Sized,
@@ -70,6 +76,7 @@ pub trait ExtendDynamicSource {
     }
 
     /// Fades out the sound.
+    #[doc = include_str!("effects/fade_out.md")]
     fn fade_out(self, duration: Duration) -> FadeOut<Self>
     where
         Self: DynamicSource + Sized,
@@ -81,6 +88,7 @@ pub trait ExtendDynamicSource {
     /// If `clamp_end` is `true`, all samples subsequent to the end of the ramp
     /// will be scaled by the `end_value`. If `clamp_end` is `false`, all
     /// subsequent samples will not have any scaling applied.
+    #[doc = include_str!("effects/linear_gain_ramp.md")]
     fn linear_gain_ramp(
         self,
         duration: Duration,
@@ -95,6 +103,7 @@ pub trait ExtendDynamicSource {
     }
 
     /// Applies a distortion effect to the sound.
+    #[doc = include_str!("effects/distortion.md")]
     fn distortion(self, gain: Float, threshold: Float) -> Distortion<Self>
     where
         Self: DynamicSource + Sized,

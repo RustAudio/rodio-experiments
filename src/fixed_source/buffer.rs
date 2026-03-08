@@ -16,15 +16,6 @@ pub struct SamplesBuffer {
 }
 
 impl SamplesBuffer {
-    /// Builds a new `SamplesBuffer`.
-    ///
-    /// # Panics
-    ///
-    /// - Panics if the number of channels is zero.
-    /// - Panics if the samples rate is zero.
-    /// - Panics if the length of the buffer is larger than approximately 16 billion elements.
-    ///   This is because the calculation of the duration would overflow.
-    ///
     pub fn new<D>(channels: ChannelCount, sample_rate: SampleRate, data: D) -> SamplesBuffer
     where
         D: Into<Vec<Sample>>,

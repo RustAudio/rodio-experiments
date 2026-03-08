@@ -1,0 +1,1 @@
+Add a method that allows pausing a source by calling [`set_paused`](Pausable) on it. A paused source yields silent samples instead while it's paused. If you collect a paused source the collect will take forever. See [`periodic_access`](Self::periodic_access) to see how to call methods on sources while they are being played.

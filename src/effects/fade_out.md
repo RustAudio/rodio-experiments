@@ -1,0 +1,1 @@
+Fades out the sound.

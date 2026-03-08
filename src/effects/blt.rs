@@ -46,40 +46,40 @@ pure_effect! {
 
     /// Modifies this filter so that it becomes a low-pass filter.
     pub fn to_low_pass(&mut self, freq: u32) {
-        self.to_low_pass_with_q(freq, 0.5);
+        self.to_low_pass_with_bandwidth(freq, 0.5);
     }
 
     /// Modifies this filter so that it becomes a high-pass filter
     pub fn to_high_pass(&mut self, freq: u32) {
-        self.to_high_pass_with_q(freq, 0.5);
+        self.to_high_pass_with_bandwidth(freq, 0.5);
     }
 
-    /// Same as to_low_pass but allows the q value (bandwidth) to be changed
-    pub fn to_low_pass_with_q(&mut self, freq: u32, q: Float) {
-        self.formula = BltFormula::LowPass { freq, q };
+    /// Same as to_low_pass but allows the bandwidth value to be changed
+    pub fn to_low_pass_with_bandwidth(&mut self, freq: u32, bandwidth: Float) {
+        self.formula = BltFormula::LowPass { freq, bandwidth };
         self.applier = None;
     }
 
-    /// Same as to_high_pass but allows the q value (bandwidth) to be changed
-    pub fn to_high_pass_with_q(&mut self, freq: u32, q: Float) {
-        self.formula = BltFormula::HighPass { freq, q };
+    /// Same as to_high_pass but allows the bandwidth value to be changed
+    pub fn to_high_pass_with_bandwidth(&mut self, freq: u32, bandwidth: Float) {
+        self.formula = BltFormula::HighPass { freq, bandwidth };
         self.applier = None;
     }
 }
 
 #[derive(Clone, Debug)]
 pub(crate) enum BltFormula {
-    LowPass { freq: u32, q: Float },
-    HighPass { freq: u32, q: Float },
+    LowPass { freq: u32, bandwidth: Float },
+    HighPass { freq: u32, bandwidth: Float },
 }
 
 impl BltFormula {
     fn to_applier(&self, sampling_frequency: u32) -> BltApplier {
         match *self {
-            BltFormula::LowPass { freq, q } => {
+            BltFormula::LowPass { freq, bandwidth } => {
                 let w0 = 2.0 * PI * freq as Float / sampling_frequency as Float;
 
-                let alpha = w0.sin() / (2.0 * q);
+                let alpha = w0.sin() / (2.0 * bandwidth);
                 let b1 = 1.0 - w0.cos();
                 let b0 = b1 / 2.0;
                 let b2 = b0;
@@ -95,10 +95,10 @@ impl BltFormula {
                     a2: a2 / a0,
                 }
             }
-            BltFormula::HighPass { freq, q } => {
+            BltFormula::HighPass { freq, bandwidth } => {
                 let w0 = 2.0 * PI * freq as Float / sampling_frequency as Float;
                 let cos_w0 = w0.cos();
-                let alpha = w0.sin() / (2.0 * q);
+                let alpha = w0.sin() / (2.0 * bandwidth);
 
                 let b0 = (1.0 + cos_w0) / 2.0;
                 let b1 = -1.0 - cos_w0;

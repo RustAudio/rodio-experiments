@@ -1,15 +1,15 @@
 use std::time::Duration;
 
-use crate::effects::fixed_source::Distortion;
-use crate::effects::fixed_source::LinearGainRamp;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::effects::blt::BltFormula;
+use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
+use crate::effects::fixed_source::LinearGainRamp;
 
 use crate::ConstSource;
 use crate::conversions::channelcount::fixed_input::ChannelConverter;
@@ -29,6 +29,7 @@ pub mod buffer;
 pub mod queue;
 
 pub trait FixedSourceExt: FixedSource {
+    #[doc = include_str!("effects/take_duration.md")]
     fn take_duration(self, duration: Duration) -> TakeDuration<Self>
     where
         Self: Sized,
@@ -36,6 +37,7 @@ pub trait FixedSourceExt: FixedSource {
         TakeDuration::new(self, duration)
     }
 
+    #[doc = include_str!("effects/take_samples.md")]
     fn take_samples(self, samples: usize) -> TakeSamples<Self>
     where
         Self: Sized,
@@ -43,6 +45,7 @@ pub trait FixedSourceExt: FixedSource {
         TakeSamples::new(self, samples)
     }
 
+    #[doc = include_str!("effects/periodic_access.md")]
     fn periodic_access(self, call_every: Duration, arg: fn(&mut Self)) -> PeriodicAccess<Self>
     where
         Self: Sized,
@@ -50,6 +53,7 @@ pub trait FixedSourceExt: FixedSource {
         PeriodicAccess::new(self, call_every, arg)
     }
 
+    #[doc = include_str!("effects/with_data.md")]
     fn with_data<D>(self, data: D) -> WithData<Self, D>
     where
         Self: Sized,
@@ -91,6 +95,7 @@ pub trait FixedSourceExt: FixedSource {
         }
     }
 
+    #[doc = include_str!("effects/pausable.md")]
     fn pausable(self, paused: bool) -> Pausable<Self>
     where
         Self: Sized,
@@ -98,6 +103,7 @@ pub trait FixedSourceExt: FixedSource {
         Pausable::new(self, paused)
     }
 
+    #[doc = include_str!("effects/amplify.md")]
     fn amplify(self, factor: Factor) -> Amplify<Self>
     where
         Self: Sized,
@@ -105,6 +111,7 @@ pub trait FixedSourceExt: FixedSource {
         Amplify::new(self, factor)
     }
 
+    #[doc = include_str!("effects/stoppable.md")]
     fn stoppable(self) -> Stoppable<Self>
     where
         Self: Sized,
@@ -112,6 +119,7 @@ pub trait FixedSourceExt: FixedSource {
         Stoppable::new(self)
     }
 
+    #[doc = include_str!("effects/inspect_frame.md")]
     fn inspect_frame<F: FnMut(Vec<Sample>) -> Vec<Sample>>(self, f: F) -> InspectFrame<Self, F>
     where
         Self: Sized,
@@ -119,6 +127,7 @@ pub trait FixedSourceExt: FixedSource {
         InspectFrame::new(self, f)
     }
 
+    #[doc = include_str!("effects/automatic_gain_control.md")]
     fn automatic_gain_control(
         self,
         settings: AutomaticGainControlSettings,
@@ -129,6 +138,7 @@ pub trait FixedSourceExt: FixedSource {
         AutomaticGainControl::new(self, settings)
     }
 
+    #[doc = include_str!("effects/collect_into_buffer.md")]
     fn collect_into_buffer(self) -> SamplesBuffer
     where
         Self: Sized,
@@ -140,6 +150,7 @@ pub trait FixedSourceExt: FixedSource {
         )
     }
 
+    #[doc = include_str!("effects/limit.md")]
     fn limit(self, settings: LimitSettings) -> Limit<Self>
     where
         Self: Sized,
@@ -147,35 +158,51 @@ pub trait FixedSourceExt: FixedSource {
         Limit::new(self, settings)
     }
 
+    #[doc = include_str!("effects/low_pass.md")]
     fn low_pass(self, freq: u32) -> BltFilter<Self>
     where
         Self: Sized,
     {
-        BltFilter::new(self, BltFormula::LowPass { freq, q: 0.5 })
+        BltFilter::new(
+            self,
+            BltFormula::LowPass {
+                freq,
+                bandwidth: 0.5,
+            },
+        )
     }
 
+    #[doc = include_str!("effects/high_pass.md")]
     fn high_pass(self, freq: u32) -> BltFilter<Self>
     where
         Self: Sized,
     {
-        BltFilter::new(self, BltFormula::HighPass { freq, q: 0.5 })
+        BltFilter::new(
+            self,
+            BltFormula::HighPass {
+                freq,
+                bandwidth: 0.5,
+            },
+        )
     }
 
-    fn low_pass_with_q(self, freq: u32, q: Float) -> BltFilter<Self>
+    #[doc = include_str!("effects/low_pass_with_bandwidth.md")]
+    fn low_pass_with_bandwidth(self, freq: u32, bandwidth: Float) -> BltFilter<Self>
     where
         Self: Sized,
     {
-        BltFilter::new(self, BltFormula::LowPass { freq, q })
+        BltFilter::new(self, BltFormula::LowPass { freq, bandwidth })
     }
 
-    fn high_pass_with_q(self, freq: u32, q: Float) -> BltFilter<Self>
+    #[doc = include_str!("effects/high_pass_with_bandwidth.md")]
+    fn high_pass_with_bandwidth(self, freq: u32, bandwidth: Float) -> BltFilter<Self>
     where
         Self: Sized,
     {
-        BltFilter::new(self, BltFormula::HighPass { freq, q })
+        BltFilter::new(self, BltFormula::HighPass { freq, bandwidth })
     }
 
-    /// Fades in the sound.
+    #[doc = include_str!("effects/fade_in.md")]
     fn fade_in(self, duration: Duration) -> FadeIn<Self>
     where
         Self: Sized,
@@ -183,18 +210,15 @@ pub trait FixedSourceExt: FixedSource {
         FadeIn::new(self, duration)
     }
 
-    /// Fades out the sound.
+    #[doc = include_str!("effects/fade_out.md")]
     fn fade_out(self, duration: Duration) -> FadeOut<Self>
     where
         Self: Sized,
     {
         FadeOut::new(self, duration)
     }
-    /// Applies a linear gain ramp to the sound.
-    ///
-    /// If `clamp_end` is `true`, all samples subsequent to the end of the ramp
-    /// will be scaled by the `end_value`. If `clamp_end` is `false`, all
-    /// subsequent samples will not have any scaling applied.
+
+    #[doc = include_str!("effects/linear_gain_ramp.md")]
     fn linear_gain_ramp(
         self,
         duration: Duration,
@@ -208,7 +232,7 @@ pub trait FixedSourceExt: FixedSource {
         LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
     }
 
-    /// Applies a distortion effect to the sound.
+    #[doc = include_str!("effects/distortion.md")]
     fn distortion(self, gain: Float, threshold: Float) -> Distortion<Self>
     where
         Self: Sized,
