@@ -15,7 +15,11 @@ use crate::effects::dynamic_source::{
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
 pub trait ExtendDynamicSource {
-    fn into_fixed_source(
+    /// Only succeeds if the span length is `None` (infinite).
+    fn try_as_fixed_source(self) -> Result<AsFixedSource<Self>, ParametersCanChange>
+    where
+        Self: DynamicSource + Sized;
+    fn resample_into_fixed_source(
         self,
         sample_rate: SampleRate,
         channel_count: ChannelCount,
@@ -125,8 +129,39 @@ impl<S: DynamicSource> Iterator for IntoFixedSource<S> {
     }
 }
 
+pub struct AsFixedSource<S: DynamicSource>(S);
+
+impl<S: DynamicSource> FixedSource for AsFixedSource<S> {
+    fn channels(&self) -> ChannelCount {
+        self.0.channels()
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        self.0.sample_rate()
+    }
+
+    fn total_duration(&self) -> Option<std::time::Duration> {
+        self.0.total_duration()
+    }
+}
+
+impl<S: DynamicSource> Iterator for AsFixedSource<S> {
+    type Item = Sample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error(
+    "Source has a span which means its parameters may change. Try resampling it into a
+        fixed source with `resample_into_fixed_source`"
+)]
+pub struct ParametersCanChange;
+
 impl<S: DynamicSource> ExtendDynamicSource for S {
-    fn into_fixed_source(
+    fn resample_into_fixed_source(
         self,
         sample_rate: SampleRate,
         channel_count: ChannelCount,
@@ -134,5 +169,16 @@ impl<S: DynamicSource> ExtendDynamicSource for S {
         let source = VariableInputChannelConvertor::new(self, channel_count);
         let source = VariableInputResampler::new(source, sample_rate);
         IntoFixedSource(source)
+    }
+
+    fn try_as_fixed_source(self) -> Result<AsFixedSource<Self>, ParametersCanChange>
+    where
+        Self: DynamicSource + Sized,
+    {
+        if self.current_span_len().is_none() {
+            Ok(AsFixedSource(self))
+        } else {
+            Err(ParametersCanChange)
+        }
     }
 }
