@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use rodio::{ChannelCount, FixedSource, Sample, SampleRate};
 
+use crate::effects::dynamic_source::Distortion;
 use crate::Float;
 use crate::Source as DynamicSource;
 use crate::conversions::channelcount::VariableInputChannelConvertor;
@@ -87,6 +88,14 @@ pub trait ExtendDynamicSource {
         Self: DynamicSource + Sized,
     {
         LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
+    }
+
+    /// Applies a distortion effect to the sound.
+    fn distortion(self, gain: Float, threshold: Float) -> Distortion<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        Distortion::new(self, gain, threshold)
     }
 }
 

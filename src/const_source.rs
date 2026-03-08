@@ -8,6 +8,7 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
+use crate::effects::const_source::Distortion;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
 use crate::effects::const_source::LinearGainRamp;
@@ -208,6 +209,14 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
+    }
+
+    /// Applies a distortion effect to the sound.
+    fn distortion(self, gain: Float, threshold: Float) -> Distortion<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Distortion::new(self, gain, threshold)
     }
 }
 

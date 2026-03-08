@@ -10,6 +10,7 @@ mod stoppable;
 mod take_duration;
 mod take_samples;
 mod with_data;
+mod distortion;
 
 // we can only get the structure: effects::effect::source_type::Struct with a macro
 // so we re-export the structs here to get the nicer structure:
@@ -29,6 +30,7 @@ pub mod fixed_source {
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
     pub use super::limiter::fixed_source::Limit;
+    pub use super::distortion::fixed_source::Distortion;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
@@ -45,6 +47,7 @@ pub mod const_source {
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
     pub use super::limiter::const_source::Limit;
+    pub use super::distortion::const_source::Distortion;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
@@ -55,6 +58,7 @@ pub mod dynamic_source {
     pub use super::periodic_access::dynamic_source::PeriodicAccess;
     pub use super::stoppable::dynamic_source::Stoppable;
     pub use super::with_data::dynamic_source::WithData;
+    pub use super::distortion::dynamic_source::Distortion;
 }
 
 /// Note: methods taking &mut self must have mut ref as a prefix, they must be

@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::LinearGainRamp;
 use crate::ChannelCount;
 use crate::FixedSource;
@@ -175,7 +176,6 @@ pub trait FixedSourceExt: FixedSource {
     }
 
     /// Fades in the sound.
-    #[inline]
     fn fade_in(self, duration: Duration) -> FadeIn<Self>
     where
         Self: Sized,
@@ -184,7 +184,6 @@ pub trait FixedSourceExt: FixedSource {
     }
 
     /// Fades out the sound.
-    #[inline]
     fn fade_out(self, duration: Duration) -> FadeOut<Self>
     where
         Self: Sized,
@@ -207,6 +206,14 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
+    }
+
+    /// Applies a distortion effect to the sound.
+    fn distortion(self, gain: Float, threshold: Float) -> Distortion<Self>
+    where
+        Self: Sized,
+    {
+        Distortion::new(self, gain, threshold)
     }
 }
 
