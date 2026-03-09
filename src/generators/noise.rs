@@ -44,6 +44,8 @@
 //! let white_custom = WhiteUniform::<StdRng>::new_with_rng(sample_rate, StdRng::seed_from_u64(12345));
 //! ```
 
+use std::num::NonZero;
+
 use rand::RngExt;
 use rand::distr::Uniform;
 use rand::rngs::SmallRng;
@@ -52,6 +54,7 @@ use rand_distr::{Normal, Triangular};
 mod tests;
 
 use crate::Float;
+use crate::SampleRate;
 use crate::math::PI;
 
 export_noise! {WhiteUniform, WhiteTriangular, WhiteGaussian, Velvet, Pink, Blue, Violet, Brownian, Red}
@@ -269,6 +272,59 @@ impl_noise! {
         } else {
             0
         };
+    }
+}
+
+// Velvet noise has two extra factories that can not be easily added
+// to the macro. So we add them manually here.
+impl<const SR: u32> const_source::Velvet<SR> {
+    /// Create a new velvet noise generator with custom density (impulses per second) and RNG.
+    ///
+    /// **Density guidelines:**
+    /// - 500-1000 Hz: Sparse, distant reverb effects
+    /// - 1000-2000 Hz: Balanced reverb simulation (default: 2000 Hz)
+    /// - 2000-4000 Hz: Dense, close reverb effects
+    /// - >4000 Hz: Very dense, approaching continuous noise
+    pub fn new_with_density(density: NonZero<usize>) -> Self {
+        let mut rng = rand::make_rng::<SmallRng>();
+        let grid_size = (SR as f32 / density.get() as f32).ceil() as usize;
+        let impulse_pos = if grid_size > 0 {
+            rng.random_range(0..grid_size)
+        } else {
+            0
+        };
+        Self {
+            rng,
+            grid_size,
+            grid_pos: 0,
+            impulse_pos,
+        }
+    }
+}
+
+impl fixed_source::Velvet {
+    /// Create a new velvet noise generator with custom density (impulses per second) and RNG.
+    ///
+    /// **Density guidelines:**
+    /// - 500-1000 Hz: Sparse, distant reverb effects
+    /// - 1000-2000 Hz: Balanced reverb simulation (default: 2000 Hz)
+    /// - 2000-4000 Hz: Dense, close reverb effects
+    /// - >4000 Hz: Very dense, approaching continuous noise
+    pub fn new_with_density(sample_rate: SampleRate, density: NonZero<usize>) -> Self {
+        let mut rng = rand::make_rng::<SmallRng>();
+        let grid_size = (sample_rate.get() as f32 / density.get() as f32).ceil() as usize;
+        let impulse_pos = if grid_size > 0 {
+            rng.random_range(0..grid_size)
+        } else {
+            0
+        };
+        Self {
+            rng,
+            grid_size,
+            grid_pos: 0,
+            impulse_pos,
+            sample_rate,
+        }
     }
 }
 
@@ -498,7 +554,6 @@ macro_rules! impl_noise {
     // like `struct` above the `fn`, `&mut` and `-> Option<Sample>` are just there
     // to make the macro input seem regular rust code
     fn next(&mut $self:ident) -> Option<Sample> $body:block
-    $([use $needed:ident]),*
     $(#[$new_attr:meta])?
     fn new<$SR:ident>($sample_rate:ident $($factory_args:tt)*)
     -> Self {
@@ -539,8 +594,6 @@ macro_rules! impl_noise {
             #[allow(redundant_semicolons)]
             $(#[$new_attr])?
             $vis fn new($sample_rate: crate::SampleRate, $($factory_args)*) -> Self {
-                $(use super::$needed::fixed_source::$needed;)*
-
                 $($factory_body)*
 
                 Self {
@@ -581,8 +634,6 @@ macro_rules! impl_noise {
             #[allow(redundant_semicolons)]
             $(#[$new_attr])?
             $vis fn new($($factory_args)*) -> Self {
-                $(use super::$needed::const_source::$needed;)*
-
                 const { assert!(SR > 0) };
                 #[allow(unused)]
                 let $sample_rate = core::num::NonZero::<u32>::new(SR).expect("assert above");
