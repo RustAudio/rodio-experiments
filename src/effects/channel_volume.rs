@@ -1,4 +1,5 @@
 use crate::effects::pure_effect;
+use dasp_sample::Sample as _; // for Sample::EQUILIBRIUM;
 
 use crate::Float;
 use crate::Sample;
@@ -14,13 +15,13 @@ pure_effect! {
         if self.current_channel >= self.channel_volumes.len() {
             self.current_channel = 0;
             self.current_sample = None;
-            let num_channels = self.inner().channels();
-            for _ in 0..num_channels.get() {
-                if let Some(s) = self.inner.next() {
-                    self.current_sample = Some(self.current_sample.unwrap_or(0.0) + s);
-                }
+            for _ in 0..self.inner.channels().get() {
+                let s = self.inner.next()?;
+                self.current_sample = Some(s + self.current_sample.unwrap_or(Sample::EQUILIBRIUM));
             }
-            self.current_sample.map(|s| s / num_channels.get() as Float);
+            self.current_sample = self
+                .current_sample
+                .map(|s| s / self.inner.channels().get() as Float);
         }
         let result = self
             .current_sample

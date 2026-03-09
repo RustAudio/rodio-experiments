@@ -8,6 +8,7 @@ use crate::SampleRate;
 use crate::effects::blt::BltFormula;
 use crate::effects::fixed_source::ChannelVolume;
 use crate::effects::fixed_source::Distortion;
+use crate::effects::fixed_source::Dither;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
 use crate::effects::fixed_source::LinearGainRamp;
@@ -17,6 +18,7 @@ use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
+use crate::effects::dither::Algorithm as DitherAlgorithm;
 use crate::effects::fixed_source::BltFilter;
 use crate::effects::fixed_source::Limit;
 use crate::effects::fixed_source::{
@@ -247,6 +249,14 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         ChannelVolume::new(self, channel_volumes)
+    }
+
+    #[doc = include_str!("effects/dither.md")]
+    fn dither(self, target_bits: crate::BitDepth, algorithm: DitherAlgorithm) -> Dither<Self>
+    where
+        Self: Sized,
+    {
+        Dither::new(self, target_bits, algorithm)
     }
 }
 

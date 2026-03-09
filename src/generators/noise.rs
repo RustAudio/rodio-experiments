@@ -566,7 +566,8 @@ macro_rules! impl_noise {
         pub(crate) mod fixed_source {
             #[allow(unused)]
             use super::*;
-            #[derive(Clone)]
+
+            #[derive(Clone, Debug, PartialEq)]
             $vis struct $name<$($t:$bound)?> {
                 pub(crate) sample_rate: crate::SampleRate,
                 $(pub(crate) $field: $field_ty),*
@@ -616,7 +617,7 @@ macro_rules! impl_noise {
             #[allow(unused)]
             use super::*;
 
-            #[derive(Clone)]
+            #[derive(Clone, Debug, PartialEq)]
             pub struct $name<const SR: u32, $($t:$bound)?> {
                 $(pub(crate) $field: $field_ty),*
             }

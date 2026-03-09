@@ -3,7 +3,7 @@ pub mod automatic_gain_control;
 pub mod blt;
 mod channel_volume;
 mod distortion;
-mod dither;
+pub mod dither;
 mod fades;
 mod inspect;
 pub mod limiter;
@@ -34,6 +34,7 @@ pub mod fixed_source {
     pub use super::take_duration::fixed_source::TakeDuration;
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
+    pub use super::dither::fixed_source::Dither;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
@@ -52,6 +53,7 @@ pub mod const_source {
     pub use super::take_duration::const_source::TakeDuration;
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
+    pub use super::dither::const_source::Dither;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
@@ -104,6 +106,10 @@ macro_rules! pure_effect {
 
             fn next(&mut $self) -> Option<Self::Item> {
                 $body
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.inner.size_hint()
             }
         }
 
@@ -183,6 +189,10 @@ macro_rules! inner {
             fn next(&mut $self) -> Option<Self::Item> {
                 $body
             }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.inner.size_hint()
+            }
         }
 
         pub(crate) mod const_source {
@@ -216,6 +226,10 @@ macro_rules! inner {
 
             fn next(&mut $self) -> Option<Self::Item> {
                 $body
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.inner.size_hint()
             }
         }
     }

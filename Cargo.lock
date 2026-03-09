@@ -910,6 +910,7 @@ version = "0.1.0"
 dependencies = [
  "audioadapter",
  "audioadapter-buffers",
+ "dasp_sample",
  "divan",
  "itertools",
  "rand 0.10.0",

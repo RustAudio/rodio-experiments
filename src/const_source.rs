@@ -10,6 +10,7 @@ use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
 use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
+use crate::effects::const_source::Dither;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
 use crate::effects::const_source::LinearGainRamp;
@@ -26,6 +27,7 @@ use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::blt::BltFormula;
+use crate::effects::dither::Algorithm as DitherAlgorithm;
 use crate::effects::const_source::BltFilter;
 use crate::effects::const_source::Limit;
 use crate::effects::const_source::{
@@ -250,6 +252,18 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         ChannelVolume::new(self, channel_volumes)
+    }
+
+    #[doc = include_str!("effects/dither.md")]
+    fn dither(
+        self,
+        target_bits: crate::BitDepth,
+        algorithm: DitherAlgorithm,
+    ) -> Dither<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        Dither::new(self, target_bits, algorithm)
     }
 }
 
