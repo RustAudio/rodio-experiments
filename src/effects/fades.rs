@@ -12,7 +12,6 @@ use crate::effects::pure_effect;
 pub(super) mod fade_out {
     use super::*;
     pure_effect! {
-        supports_dynamic_source
         struct FadeOut {
             ramp: Ramp,
         }
@@ -35,7 +34,6 @@ pub(super) mod fade_out {
 pub(super) mod fade_in {
     use super::*;
     pure_effect! {
-        supports_dynamic_source
         struct FadeIn {
             ramp: Ramp,
         }
@@ -58,7 +56,6 @@ pub(super) mod fade_in {
 pub(super) mod linear_ramp {
     use super::*;
     pure_effect! {
-        supports_dynamic_source
         struct LinearGainRamp {
             ramp: Ramp,
         }

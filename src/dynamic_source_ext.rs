@@ -8,9 +8,7 @@ use crate::conversions::channelcount::VariableInputChannelConvertor;
 use crate::conversions::resampler::variable_input::VariableInputResampler;
 use crate::effects::amplify::Factor;
 use crate::effects::dynamic_source::Distortion;
-use crate::effects::dynamic_source::{
-    Amplify, FadeIn, FadeOut, LinearGainRamp, Pausable, PeriodicAccess, Stoppable, WithData,
-};
+use crate::effects::dynamic_source::{Amplify, Pausable, PeriodicAccess, Stoppable, WithData};
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
@@ -66,43 +64,6 @@ pub trait ExtendDynamicSource {
     {
         WithData::new(self, data)
     }
-    /// Fades in the sound.
-    #[doc = include_str!("effects/fade_in.md")]
-    fn fade_in(self, duration: Duration) -> FadeIn<Self>
-    where
-        Self: DynamicSource + Sized,
-    {
-        FadeIn::new(self, duration)
-    }
-
-    /// Fades out the sound.
-    #[doc = include_str!("effects/fade_out.md")]
-    fn fade_out(self, duration: Duration) -> FadeOut<Self>
-    where
-        Self: DynamicSource + Sized,
-    {
-        FadeOut::new(self, duration)
-    }
-    /// Applies a linear gain ramp to the sound.
-    ///
-    /// If `clamp_end` is `true`, all samples subsequent to the end of the ramp
-    /// will be scaled by the `end_value`. If `clamp_end` is `false`, all
-    /// subsequent samples will not have any scaling applied.
-    #[doc = include_str!("effects/linear_gain_ramp.md")]
-    fn linear_gain_ramp(
-        self,
-        duration: Duration,
-        start_value: Float,
-        end_value: Float,
-        clamp_end: bool,
-    ) -> LinearGainRamp<Self>
-    where
-        Self: DynamicSource + Sized,
-    {
-        LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
-    }
-
-    /// Applies a distortion effect to the sound.
     #[doc = include_str!("effects/distortion.md")]
     fn distortion(self, gain: Float, threshold: Float) -> Distortion<Self>
     where

@@ -611,6 +611,10 @@ macro_rules! impl_noise {
             fn next(&mut $self) -> Option<Self::Item> {
                 $body
             }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (usize::MAX, None)
+            }
         }
 
         pub(crate) mod const_source {
@@ -653,6 +657,10 @@ macro_rules! impl_noise {
 
             fn next(&mut $self) -> Option<Self::Item> {
                 $body
+            }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (usize::MAX, None)
             }
         }
     }

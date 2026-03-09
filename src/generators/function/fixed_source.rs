@@ -61,6 +61,10 @@ impl Iterator for SignalGenerator {
         self.phase = (self.phase + self.phase_step).rem_euclid(1.0f32);
         val
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (usize::MAX, None)
+    }
 }
 
 impl FixedSource for SignalGenerator {

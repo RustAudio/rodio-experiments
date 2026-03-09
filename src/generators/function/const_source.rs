@@ -49,6 +49,10 @@ impl<const SR: u32> Iterator for SignalGenerator<SR> {
         self.phase = (self.phase + self.phase_step).rem_euclid(1.0f32);
         val
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (usize::MAX, None)
+    }
 }
 
 impl<const SR: u32> ConstSource<SR, 1> for SignalGenerator<SR> {
