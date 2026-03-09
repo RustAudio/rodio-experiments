@@ -1,6 +1,7 @@
 pub mod amplify;
 pub mod automatic_gain_control;
 pub mod blt;
+mod channel_volume;
 mod distortion;
 mod dither;
 mod fades;
@@ -20,6 +21,7 @@ pub mod fixed_source {
     pub use super::amplify::fixed_source::Amplify;
     pub use super::automatic_gain_control::fixed_source::AutomaticGainControl;
     pub use super::blt::fixed_source::BltFilter;
+    pub use super::channel_volume::fixed_source::ChannelVolume;
     pub use super::distortion::fixed_source::Distortion;
     pub use super::fades::fade_in::fixed_source::FadeIn;
     pub use super::fades::fade_out::fixed_source::FadeOut;
@@ -37,6 +39,7 @@ pub mod const_source {
     pub use super::amplify::const_source::Amplify;
     pub use super::automatic_gain_control::const_source::AutomaticGainControl;
     pub use super::blt::const_source::BltFilter;
+    pub use super::channel_volume::const_source::ChannelVolume;
     pub use super::distortion::const_source::Distortion;
     pub use super::fades::fade_in::const_source::FadeIn;
     pub use super::fades::fade_out::const_source::FadeOut;
@@ -62,8 +65,6 @@ pub mod dynamic_source {
     pub use super::with_data::dynamic_source::WithData;
 }
 
-/// Note: methods taking &mut self must have mut ref as a prefix, they must be
-/// specified before methods taking &self
 macro_rules! pure_effect {
     (
     supports_dynamic_source

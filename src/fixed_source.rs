@@ -6,6 +6,7 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::effects::blt::BltFormula;
+use crate::effects::fixed_source::ChannelVolume;
 use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
@@ -16,8 +17,8 @@ use crate::conversions::channelcount::fixed_input::ChannelConverter;
 use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
-use crate::effects::fixed_source::Limit;
 use crate::effects::fixed_source::BltFilter;
+use crate::effects::fixed_source::Limit;
 use crate::effects::fixed_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
@@ -238,6 +239,14 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         Distortion::new(self, gain, threshold)
+    }
+
+    #[doc = include_str!("effects/channel_volume.md")]
+    fn channel_volume(self, channel_volumes: Vec<Float>) -> ChannelVolume<Self>
+    where
+        Self: Sized,
+    {
+        ChannelVolume::new(self, channel_volumes)
     }
 }
 

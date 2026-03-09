@@ -8,6 +8,7 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
+use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
@@ -24,9 +25,9 @@ use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
-use crate::effects::const_source::Limit;
 use crate::effects::blt::BltFormula;
 use crate::effects::const_source::BltFilter;
+use crate::effects::const_source::Limit;
 use crate::effects::const_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
@@ -241,6 +242,14 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         Distortion::new(self, gain, threshold)
+    }
+
+    #[doc = include_str!("effects/channel_volume.md")]
+    fn channel_volume(self, channel_volumes: Vec<Float>) -> ChannelVolume<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        ChannelVolume::new(self, channel_volumes)
     }
 }
 

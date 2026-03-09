@@ -70,8 +70,4 @@ pure_effect! {
     pub fn set_factor(&mut self, factor: Factor) {
         self.factor = factor.as_linear()
     }
-
-    pub fn test(&self) -> &str {
-        dbg!("")
-    }
 }
