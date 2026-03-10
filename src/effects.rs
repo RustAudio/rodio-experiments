@@ -1,17 +1,17 @@
 pub mod amplify;
 pub mod automatic_gain_control;
-pub mod limiter;
 pub mod blt;
+mod distortion;
+mod dither;
 mod fades;
 mod inspect;
+pub mod limiter;
 mod pausable;
 mod periodic_access;
 mod stoppable;
 mod take_duration;
 mod take_samples;
 mod with_data;
-mod distortion;
-mod dither;
 
 // we can only get the structure: effects::effect::source_type::Struct with a macro
 // so we re-export the structs here to get the nicer structure:
@@ -20,38 +20,39 @@ pub mod fixed_source {
     pub use super::amplify::fixed_source::Amplify;
     pub use super::automatic_gain_control::fixed_source::AutomaticGainControl;
     pub use super::blt::fixed_source::BltFilter;
+    pub use super::distortion::fixed_source::Distortion;
     pub use super::fades::fade_in::fixed_source::FadeIn;
     pub use super::fades::fade_out::fixed_source::FadeOut;
     pub use super::fades::linear_ramp::fixed_source::LinearGainRamp;
     pub use super::inspect::fixed_source::InspectFrame;
+    pub use super::limiter::fixed_source::Limit;
     pub use super::pausable::fixed_source::Pausable;
     pub use super::periodic_access::fixed_source::PeriodicAccess;
     pub use super::stoppable::fixed_source::Stoppable;
     pub use super::take_duration::fixed_source::TakeDuration;
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
-    pub use super::limiter::fixed_source::Limit;
-    pub use super::distortion::fixed_source::Distortion;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
     pub use super::automatic_gain_control::const_source::AutomaticGainControl;
     pub use super::blt::const_source::BltFilter;
+    pub use super::distortion::const_source::Distortion;
     pub use super::fades::fade_in::const_source::FadeIn;
     pub use super::fades::fade_out::const_source::FadeOut;
     pub use super::fades::linear_ramp::const_source::LinearGainRamp;
     pub use super::inspect::const_source::InspectFrame;
+    pub use super::limiter::const_source::Limit;
     pub use super::pausable::const_source::Pausable;
     pub use super::periodic_access::const_source::PeriodicAccess;
     pub use super::stoppable::const_source::Stoppable;
     pub use super::take_duration::const_source::TakeDuration;
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
-    pub use super::limiter::const_source::Limit;
-    pub use super::distortion::const_source::Distortion;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
+    pub use super::distortion::dynamic_source::Distortion;
     pub use super::fades::fade_in::dynamic_source::FadeIn;
     pub use super::fades::fade_out::dynamic_source::FadeOut;
     pub use super::fades::linear_ramp::dynamic_source::LinearGainRamp;
@@ -59,7 +60,6 @@ pub mod dynamic_source {
     pub use super::periodic_access::dynamic_source::PeriodicAccess;
     pub use super::stoppable::dynamic_source::Stoppable;
     pub use super::with_data::dynamic_source::WithData;
-    pub use super::distortion::dynamic_source::Distortion;
 }
 
 /// Note: methods taking &mut self must have mut ref as a prefix, they must be
@@ -80,6 +80,7 @@ macro_rules! pure_effect {
         pub(crate) mod dynamic_source {
             #[allow(unused)]
             use super::*;
+            #[derive(Clone)]
             pub struct $name<S: crate::DynamicSource$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
@@ -104,7 +105,6 @@ macro_rules! pure_effect {
                 $body
             }
         }
-
 
         impl<S: crate::Source$(,$t$(:$bound)?)?> ExactSizeIterator for dynamic_source::$name<S$(,$t)?> where S: ExactSizeIterator {}
 
@@ -156,6 +156,7 @@ macro_rules! inner {
             #[allow(unused)]
             use super::*;
 
+            #[derive(Clone)]
             pub struct $name<S: crate::FixedSource$(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,
                 $(pub(crate) $field: $field_ty),*
@@ -187,6 +188,7 @@ macro_rules! inner {
             #[allow(unused)]
             use super::*;
 
+            #[derive(Clone)]
             pub struct $name<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>
                 $(,$t$(:$bound)?)?> {
                 pub(crate) inner: S,

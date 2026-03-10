@@ -78,6 +78,7 @@ pub(super) mod linear_ramp {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct Ramp {
     elapsed: Duration,
     total: Duration,

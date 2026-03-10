@@ -19,7 +19,7 @@ use crate::math::duration_to_coefficient;
 use crate::{Float, Sample};
 use std::time::Duration;
 
-use crate::{SampleRate};
+use crate::SampleRate;
 
 /// Ensures `RMS_WINDOW_SIZE` is a power of two
 const fn power_of_two(n: usize) -> usize {
@@ -110,7 +110,7 @@ impl CircularBuffer {
     }
 }
 
-// Note, because this depends on the sample rate to be constant this 
+// Note, because this depends on the sample rate to be constant this
 // is not dynamic safe.
 pure_effect! {
     struct AutomaticGainControl {
@@ -152,6 +152,7 @@ pure_effect! {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct Processor {
     target_level: Float,
     floor: Float,
@@ -335,4 +336,3 @@ impl Processor {
         sample * self.current_gain
     }
 }
-
