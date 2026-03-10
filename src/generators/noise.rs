@@ -38,10 +38,6 @@
 //! let blue = Blue::new(sample_rate);
 //! // For practical deep/muffled effects
 //! let red = Red::new(sample_rate);
-//!
-//! // Advanced usage - specify your own RNG type
-//! use rand::{rngs::StdRng, SeedableRng};
-//! let white_custom = WhiteUniform::<StdRng>::new_with_rng(sample_rate, StdRng::seed_from_u64(12345));
 //! ```
 
 use std::num::NonZero;
