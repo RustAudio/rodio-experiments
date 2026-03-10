@@ -1,14 +1,14 @@
-use rodio::FixedSource;
-use rodio::{ChannelCount, Sample};
+use crate::{ChannelCount, Sample};
+use crate::Source as DynamicSource;
 
-pub struct ChannelConverter<S> {
+pub struct VariableInputChannelConvertor<S> {
     input: S,
     pub(crate) target: ChannelCount,
     sample_repeat: Option<Sample>,
     next_output_sample_pos: u16,
 }
 
-impl<S: FixedSource> ChannelConverter<S> {
+impl<S: DynamicSource> VariableInputChannelConvertor<S> {
     pub fn new(input: S, target: ChannelCount) -> Self {
         Self {
             input,
@@ -23,7 +23,11 @@ impl<S: FixedSource> ChannelConverter<S> {
     }
 }
 
-impl<S: FixedSource> FixedSource for ChannelConverter<S> {
+impl<S: DynamicSource> DynamicSource for VariableInputChannelConvertor<S> {
+    fn current_span_len(&self) -> Option<usize> {
+        self.input.current_span_len()
+    }
+
     fn channels(&self) -> rodio::ChannelCount {
         self.target
     }
@@ -37,8 +41,7 @@ impl<S: FixedSource> FixedSource for ChannelConverter<S> {
     }
 }
 
-// TODO optimize (still assumes dynamicsource)
-impl<S: FixedSource> Iterator for ChannelConverter<S> {
+impl<S: DynamicSource> Iterator for VariableInputChannelConvertor<S> {
     type Item = rodio::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {

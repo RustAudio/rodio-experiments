@@ -3,6 +3,8 @@
 // will live under Source here directly. Open question: do we rename Source to
 // DynamicSource?
 
+pub mod conversions;
+
 
 macro_rules! add_inner_methods {
     ($name:ident$(<$t:ident>)?) => {

@@ -13,12 +13,13 @@ pub struct Resampler<S> {
     resampler: rubato::Fft<Sample>,
 }
 
+pub(crate) const RESAMPLE_BUFFER_SIZE: usize = 2048;
 impl<S: FixedSource> Resampler<S> {
     pub fn new(input: S, target_sample_rate: SampleRate) -> Self {
         let resampler = rubato::Fft::new(
             input.sample_rate().get() as usize,
             target_sample_rate.get() as usize,
-            2048,
+            RESAMPLE_BUFFER_SIZE,
             1,
             input.channels().get() as usize,
             rubato::FixedSync::Both,
@@ -328,3 +329,4 @@ mod tests {
         }
     }
 }
+

@@ -14,8 +14,6 @@ use crate::effects::fixed_source::FadeOut;
 use crate::effects::fixed_source::LinearGainRamp;
 
 use crate::ConstSource;
-use crate::conversions::channelcount::fixed_input::ChannelConverter;
-use crate::conversions::resampler::fixed_input::Resampler;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::dither::Algorithm as DitherAlgorithm;
@@ -30,6 +28,11 @@ use crate::fixed_source::buffer::SamplesBuffer;
 
 pub mod buffer;
 pub mod queue;
+pub mod list;
+pub mod conversions;
+
+use conversions::channel_count::ChannelConverter;
+use conversions::sample_rate::Resampler;
 
 pub trait FixedSourceExt: FixedSource {
     #[doc = include_str!("effects/take_duration.md")]

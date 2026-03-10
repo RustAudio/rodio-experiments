@@ -4,8 +4,8 @@ use rodio::{ChannelCount, FixedSource, Sample, SampleRate};
 
 use crate::Float;
 use crate::Source as DynamicSource;
-use crate::conversions::channelcount::VariableInputChannelConvertor;
-use crate::conversions::resampler::variable_input::VariableInputResampler;
+use crate::dynamic_source::conversions::channel_count::VariableInputChannelConvertor;
+use crate::dynamic_source::conversions::sample_rate::VariableInputResampler;
 use crate::effects::amplify::Factor;
 use crate::effects::dynamic_source::Distortion;
 use crate::effects::dynamic_source::{Amplify, Pausable, PeriodicAccess, Stoppable, WithData};

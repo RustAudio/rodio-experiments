@@ -26,7 +26,6 @@ pub use rodio::wav_to_file;
 pub use rodio::wav_to_writer;
 
 pub mod const_source;
-pub mod conversions;
 pub mod dynamic_source;
 pub mod dynamic_source_ext;
 pub mod fixed_source;
