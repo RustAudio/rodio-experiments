@@ -12,6 +12,7 @@ use crate::effects::fixed_source::Dither;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
 use crate::effects::fixed_source::LinearGainRamp;
+use crate::effects::fixed_source::TrackPosition;
 
 use crate::ConstSource;
 use crate::effects::amplify::Factor;
@@ -24,9 +25,10 @@ use crate::effects::fixed_source::{
     TakeSamples, WithData,
 };
 use crate::effects::limiter::LimitSettings;
-use crate::fixed_source::buffer::SamplesBuffer;
+use buffer::SamplesBuffer;
 
 pub mod buffer;
+pub mod chain;
 pub mod queue;
 pub mod list;
 pub mod conversions;
@@ -260,6 +262,14 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         Dither::new(self, target_bits, algorithm)
+    }
+
+    #[doc = include_str!("effects/position.md")]
+    fn track_position(self) -> TrackPosition<Self>
+    where
+        Self: Sized,
+    {
+        TrackPosition::new(self)
     }
 }
 

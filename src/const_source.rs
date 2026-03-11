@@ -14,6 +14,7 @@ use crate::effects::const_source::Dither;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
 use crate::effects::const_source::LinearGainRamp;
+use crate::effects::const_source::TrackPosition;
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
 pub mod buffer;
@@ -27,13 +28,13 @@ use crate::const_source::conversions::channelcount::ChannelConvertor;
 use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::blt::BltFormula;
-use crate::effects::dither::Algorithm as DitherAlgorithm;
 use crate::effects::const_source::BltFilter;
 use crate::effects::const_source::Limit;
 use crate::effects::const_source::{
     Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
     TakeSamples, WithData,
 };
+use crate::effects::dither::Algorithm as DitherAlgorithm;
 use crate::effects::limiter::LimitSettings;
 
 pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
@@ -265,6 +266,15 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     {
         Dither::new(self, target_bits, algorithm)
     }
+
+    #[doc = include_str!("effects/position.md")]
+    fn track_position(self) -> TrackPosition<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        TrackPosition::new(self)
+    }
+
 }
 
 // we still need this. More fancy const generics will save us at some point :)

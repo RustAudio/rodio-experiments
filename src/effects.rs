@@ -9,6 +9,7 @@ mod inspect;
 pub mod limiter;
 mod pausable;
 mod periodic_access;
+mod position;
 mod stoppable;
 mod take_duration;
 mod take_samples;
@@ -35,6 +36,7 @@ pub mod fixed_source {
     pub use super::take_duration::fixed_source::TakeDuration;
     pub use super::take_samples::fixed_source::TakeSamples;
     pub use super::with_data::fixed_source::WithData;
+    pub use super::position::fixed_source::TrackPosition;
 }
 pub mod const_source {
     pub use super::amplify::const_source::Amplify;
@@ -54,6 +56,7 @@ pub mod const_source {
     pub use super::take_duration::const_source::TakeDuration;
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
+    pub use super::position::const_source::TrackPosition;
 }
 pub mod dynamic_source {
     pub use super::amplify::dynamic_source::Amplify;
