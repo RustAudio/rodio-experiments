@@ -9,16 +9,14 @@ use crate::SampleRate;
 
 use crate::math::TAU;
 
-/// Generate a sine wave with an instantaneous frequency that changes/sweeps
-/// linearly over time. At the end of the chirp, once the `end_frequency` is
-/// reached, the source is exhausted.
-#[derive(Clone, Debug)]
+super::chirp_docs! {
 pub struct Chirp {
     start_frequency: Float,
     end_frequency: Float,
     sample_rate: SampleRate,
     total_samples: u64,
     elapsed_samples: u64,
+}
 }
 
 impl Chirp {

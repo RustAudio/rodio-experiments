@@ -38,4 +38,13 @@ pure_effect! {
             current_sample: None,
         }
     }
+    
+    /// Sets the volume for a given channel number. 
+    ///
+    /// # Panics 
+    /// If channel number is not a valid index into the 
+    /// `channel_volumes` vec passed in in new
+    pub fn set_volume(&mut self, channel: usize, volume: Float) {
+        self.channel_volumes[channel] = volume;
+    }
 }

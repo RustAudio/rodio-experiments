@@ -78,7 +78,7 @@ macro_rules! pure_effect {
     fn next(&mut $self:ident) -> Option<Sample> $body:block
     fn new($($factory_args:tt)*) -> $factory_name:ident<Self> $factory_body:block
     // mm stands for mutable method
-    $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
+    $($(#[$m_meta:meta])* $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
         pub(crate) mod dynamic_source {
             #[allow(unused)]
@@ -121,7 +121,7 @@ macro_rules! pure_effect {
             }
             fn next(&mut $self) -> Option<Sample> $body
             fn new($($factory_args)*) -> $factory_name<Self> $factory_body
-            $($(#[$m_meta])? $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
+            $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
     };
 
@@ -134,7 +134,7 @@ macro_rules! pure_effect {
     fn next(&mut $self:ident) -> Option<Sample> $body:block
     fn new($($factory_args:tt)*) -> $factory_name:ident<Self> $factory_body:block
     // mm stands for mutable method
-    $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
+    $($(#[$m_meta:meta])* $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) => {
         crate::effects::inner!{
             struct $name$(<$t$(:$bound)?>)? {
@@ -142,7 +142,7 @@ macro_rules! pure_effect {
             }
             fn next(&mut $self) -> Option<Sample> $body
             fn new($($factory_args)*) -> $factory_name<Self> $factory_body
-            $($(#[$m_meta])? $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
+            $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
     }
 }
@@ -157,7 +157,7 @@ macro_rules! inner {
     fn next(&mut $self:ident) -> Option<Sample> $body:block
     fn new($($factory_args:tt)*) -> $factory_name:ident<Self> $factory_body:block
     // mm stands for mutable method
-    $($(#[$m_meta:meta])? $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
+    $($(#[$m_meta:meta])* $m_vis:vis fn $m_name:ident($($args:tt)*) $(-> $m_ret:ty)? $m_body:block)*
     ) =>  {
         pub(crate) mod fixed_source {
             #[allow(unused)]
@@ -178,7 +178,7 @@ macro_rules! inner {
             pub(crate) fn new($($factory_args)*) -> fixed_source::$name<S$(,$t)?> {
                 $factory_body
             }
-            $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
+            $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
         impl<S: crate::FixedSource$(,$t$(:$bound)?)?> ExactSizeIterator for fixed_source::$name<S$(,$t)?> where S: ExactSizeIterator {}
@@ -215,7 +215,7 @@ macro_rules! inner {
             pub(crate) fn new($($factory_args)*) -> const_source::$name<SR, CH, S$(,$t)?> {
                 $factory_body
             }
-            $($m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
+            $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
 
 
