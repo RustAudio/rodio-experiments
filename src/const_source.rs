@@ -8,6 +8,7 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
+use crate::const_source::chain::Chain;
 use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
 use crate::effects::const_source::Dither;
@@ -18,6 +19,7 @@ use crate::effects::const_source::TrackPosition;
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
 pub mod buffer;
+mod chain;
 pub mod conversions;
 pub mod list;
 pub mod mixer;
@@ -275,6 +277,13 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         TrackPosition::new(self)
     }
 
+    fn chain<S>(self, next: S) -> Chain<SR, CH, Self, S>
+    where
+        Self: Sized,
+        S: ConstSource<SR, CH>,
+    {
+        Chain::new(self, next)
+    }
 }
 
 // we still need this. More fancy const generics will save us at some point :)
