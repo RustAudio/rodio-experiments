@@ -28,7 +28,7 @@
 use super::pure_effect;
 use crate::{
     BitDepth, ChannelCount, Float, Sample,
-    generators::noise::fixed_source::{Blue, WhiteGaussian, WhiteTriangular, WhiteUniform},
+    generators::fixed_source::noise::{Blue, WhiteGaussian, WhiteTriangular, WhiteUniform},
     nz,
 };
 
