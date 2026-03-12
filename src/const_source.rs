@@ -277,6 +277,19 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         TrackPosition::new(self)
     }
 
+    /// Add another source to play directly after this one.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use rodio_experiments::const_source::ConstSource;
+    /// # use rodio_experiments::const_source::buffer::SamplesBuffer;
+    /// let preamble = SamplesBuffer::<44100, 1>::new([1.0, 1.0]);
+    /// let signal = SamplesBuffer::<44100, 1>::new([2.0, 2.0]);
+
+    /// let mixed = preamble.chain_source(signal);
+    /// assert_eq!(mixed.collect::<Vec<_>>(), vec![1.0,1.0,2.0,2.0])
+    /// ```
     fn chain_source<S>(self, next: S) -> SourceChain<SR, CH, Self, S>
     where
         Self: Sized,

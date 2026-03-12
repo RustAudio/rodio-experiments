@@ -71,7 +71,13 @@ impl<S1: FixedSource, S2: FixedSource> Iterator for SourceChain<S1, S2> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.playing_inner {
-            self.inner.next()
+            match self.inner.next() {
+                Some(sample) => Some(sample),
+                None => {
+                    self.playing_inner = false;
+                    self.next.next()
+                }
+            }
         } else {
             self.next.next()
         }

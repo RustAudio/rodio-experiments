@@ -37,7 +37,13 @@ impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, 
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.playing_inner {
-            self.inner.next()
+            match self.inner.next() {
+                Some(sample) => Some(sample),
+                None => {
+                    self.playing_inner = false;
+                    self.next.next()
+                }
+            }
         } else {
             self.next.next()
         }
