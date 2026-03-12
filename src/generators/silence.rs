@@ -68,7 +68,7 @@ guarantee an exact playtime:
 # use rodio_experiments::generators::functions::", $mod, "::SineWave;
 # let unknown_length = SineWave::new(440);
 let two_seconds = unknown_length
-    .chain(silence)
+    .chain_source(silence)
     .take_duration(Duration::from_secs(2));
 ```
 ")]

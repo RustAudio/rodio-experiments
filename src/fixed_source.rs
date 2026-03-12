@@ -26,7 +26,7 @@ use crate::effects::fixed_source::{
 };
 use crate::effects::limiter::LimitSettings;
 use buffer::SamplesBuffer;
-use chain::Chain;
+use chain::SourceChain;
 
 pub mod buffer;
 pub mod chain;
@@ -273,11 +273,14 @@ pub trait FixedSourceExt: FixedSource {
         TrackPosition::new(self)
     }
 
-    fn try_chain<S: FixedSource>(self, next: S) -> Result<Chain<Self, S>, chain::ParamsMismatch>
+    fn try_chain_source<S: FixedSource>(
+        self,
+        next: S,
+    ) -> Result<SourceChain<Self, S>, chain::ParamsMismatch>
     where
         Self: Sized,
     {
-        Chain::new(self, next)
+        SourceChain::new(self, next)
     }
 }
 

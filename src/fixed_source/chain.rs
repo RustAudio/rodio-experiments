@@ -4,7 +4,7 @@ use crate::FixedSource;
 use crate::Sample;
 use crate::{ChannelCount, SampleRate};
 
-pub struct Chain<S1, S2> {
+pub struct SourceChain<S1, S2> {
     inner: S1,
     next: S2,
     playing_inner: bool,
@@ -30,7 +30,7 @@ impl Display for ParamsMismatch {
     }
 }
 
-impl<S1: FixedSource, S2: FixedSource> Chain<S1, S2> {
+impl<S1: FixedSource, S2: FixedSource> SourceChain<S1, S2> {
     pub(crate) fn new(s1: S1, s2: S2) -> Result<Self, ParamsMismatch> {
         if s1.sample_rate() != s2.sample_rate() || s1.channels() != s2.channels() {
             Err(ParamsMismatch {
@@ -40,7 +40,7 @@ impl<S1: FixedSource, S2: FixedSource> Chain<S1, S2> {
                 channel_count_adding: s2.channels(),
             })
         } else {
-            Ok(Chain {
+            Ok(SourceChain {
                 inner: s1,
                 next: s2,
                 playing_inner: true,
@@ -49,7 +49,7 @@ impl<S1: FixedSource, S2: FixedSource> Chain<S1, S2> {
     }
 }
 
-impl<S1: FixedSource, S2: FixedSource> FixedSource for Chain<S1, S2> {
+impl<S1: FixedSource, S2: FixedSource> FixedSource for SourceChain<S1, S2> {
     fn channels(&self) -> rodio::ChannelCount {
         self.inner.channels()
     }
@@ -65,7 +65,7 @@ impl<S1: FixedSource, S2: FixedSource> FixedSource for Chain<S1, S2> {
     }
 }
 
-impl<S1: FixedSource, S2: FixedSource> Iterator for Chain<S1, S2> {
+impl<S1: FixedSource, S2: FixedSource> Iterator for SourceChain<S1, S2> {
     type Item = Sample;
 
     fn next(&mut self) -> Option<Self::Item> {

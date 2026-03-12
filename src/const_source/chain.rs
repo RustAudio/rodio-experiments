@@ -1,17 +1,17 @@
 use crate::ConstSource;
 use crate::Sample;
 
-pub struct Chain<const SR: u32, const CH: u16, S1, S2> {
+pub struct SourceChain<const SR: u32, const CH: u16, S1, S2> {
     inner: S1,
     next: S2,
     playing_inner: bool,
 }
 
 impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, CH>>
-    Chain<SR, CH, S1, S2>
+    SourceChain<SR, CH, S1, S2>
 {
     pub(crate) fn new(s1: S1, s2: S2) -> Self {
-        Chain {
+        SourceChain {
             inner: s1,
             next: s2,
             playing_inner: true,
@@ -20,7 +20,7 @@ impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, 
 }
 
 impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, CH>>
-    ConstSource<SR, CH> for Chain<SR, CH, S1, S2>
+    ConstSource<SR, CH> for SourceChain<SR, CH, S1, S2>
 {
     fn total_duration(&self) -> Option<std::time::Duration> {
         self.inner
@@ -30,7 +30,7 @@ impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, 
 }
 
 impl<const SR: u32, const CH: u16, S1: ConstSource<SR, CH>, S2: ConstSource<SR, CH>> Iterator
-    for Chain<SR, CH, S1, S2>
+    for SourceChain<SR, CH, S1, S2>
 {
     type Item = Sample;
 

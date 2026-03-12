@@ -8,7 +8,7 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
-use crate::const_source::chain::Chain;
+use crate::const_source::chain::SourceChain;
 use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
 use crate::effects::const_source::Dither;
@@ -277,12 +277,12 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         TrackPosition::new(self)
     }
 
-    fn chain<S>(self, next: S) -> Chain<SR, CH, Self, S>
+    fn chain_source<S>(self, next: S) -> SourceChain<SR, CH, Self, S>
     where
         Self: Sized,
         S: ConstSource<SR, CH>,
     {
-        Chain::new(self, next)
+        SourceChain::new(self, next)
     }
 }
 
