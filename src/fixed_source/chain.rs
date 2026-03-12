@@ -10,7 +10,7 @@ pub struct SourceChain<S1, S2> {
     playing_inner: bool,
 }
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
 pub struct ParamsMismatch {
     sample_rate_self: SampleRate,
     channel_count_self: ChannelCount,

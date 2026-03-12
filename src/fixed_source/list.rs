@@ -17,7 +17,7 @@ pub trait IntoList {
     ) -> Self::IntoListSource;
 }
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
 pub struct ParamsMismatch {
     tuple_index_that_mismatched: u8,
     sample_rate_left: SampleRate,
