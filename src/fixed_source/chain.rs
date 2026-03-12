@@ -4,6 +4,7 @@ use crate::FixedSource;
 use crate::Sample;
 use crate::{ChannelCount, SampleRate};
 
+#[derive(Clone)]
 pub struct SourceChain<S1, S2> {
     inner: S1,
     next: S2,

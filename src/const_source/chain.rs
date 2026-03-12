@@ -1,6 +1,7 @@
 use crate::ConstSource;
 use crate::Sample;
 
+#[derive(Clone)]
 pub struct SourceChain<const SR: u32, const CH: u16, S1, S2> {
     inner: S1,
     next: S2,
