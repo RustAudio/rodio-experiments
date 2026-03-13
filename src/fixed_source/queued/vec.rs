@@ -4,16 +4,16 @@ use itertools::Itertools;
 
 use super::ParamsMismatch;
 use crate::FixedSource;
-use crate::fixed_source::list::IntoList;
-use crate::fixed_source::list::tuple::{MaybeConvert, convert_if_needed};
+use super::super::convert_if_needed;
+use super::super::MaybeConvert;
 use crate::{ChannelCount, SampleRate};
 
 #[derive(Clone, Debug)]
-pub struct ArrayList<const N: usize, S> {
-    sources: [S; N],
+pub struct QueuedVec<S> {
+    sources: Vec<S>,
     current: usize,
 }
-impl<const N: usize, S: FixedSource> Iterator for ArrayList<N, S> {
+impl<S: FixedSource> Iterator for QueuedVec<S> {
     type Item = crate::Sample;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -31,7 +31,7 @@ impl<const N: usize, S: FixedSource> Iterator for ArrayList<N, S> {
     }
 }
 
-impl<const N: usize, S: FixedSource> FixedSource for ArrayList<N, S> {
+impl<S: FixedSource> FixedSource for QueuedVec<S> {
     fn channels(&self) -> rodio::ChannelCount {
         self.sources[0].channels()
     }
@@ -46,14 +46,14 @@ impl<const N: usize, S: FixedSource> FixedSource for ArrayList<N, S> {
     }
 }
 
-impl<const N: usize, S: FixedSource> IntoList for [S; N] {
-    type TryListSource = ArrayList<N, S>;
-    type IntoListSource = ArrayList<N, MaybeConvert<S>>;
+impl<S: FixedSource> super::IntoQueued for Vec<S> {
+    type TryQueuedSource = QueuedVec<S>;
+    type IntoQueuedSource = QueuedVec<MaybeConvert<S>>;
 
-    fn try_into_list(self) -> Result<Self::TryListSource, ParamsMismatch> {
+    fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
         let mut list = self.iter().map(|s| (s.sample_rate(), s.channels()));
         let Some(first) = list.next() else {
-            return Ok(ArrayList {
+            return Ok(QueuedVec {
                 sources: self,
                 current: 0,
             });
@@ -69,7 +69,7 @@ impl<const N: usize, S: FixedSource> IntoList for [S; N] {
                 channel_count_right,
             });
         }
-        Ok(Self::TryListSource {
+        Ok(Self::TryQueuedSource {
             sources: self,
             current: 0,
         })
@@ -78,9 +78,12 @@ impl<const N: usize, S: FixedSource> IntoList for [S; N] {
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoListSource {
-        Self::IntoListSource {
-            sources: self.map(|s| convert_if_needed(s, sample_rate, channels)),
+    ) -> Self::IntoQueuedSource {
+        Self::IntoQueuedSource {
+            sources: self
+                .into_iter()
+                .map(|s| convert_if_needed(s, sample_rate, channels))
+                .collect(),
             current: 0,
         }
     }

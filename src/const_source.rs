@@ -21,9 +21,17 @@ use crate::effects::const_source::TrackPosition;
 pub mod buffer;
 mod chain;
 pub mod conversions;
-pub mod list;
+/// Can be added to after creation
 pub mod mixer;
+/// Can not be changed after creation
+pub mod mixed;
+/// Can be added to after creation
 pub mod queue;
+/// Can not be changed after creation
+pub mod queued;
+
+mod macros;
+pub(crate) use macros::{add_inner_methods, impl_wrapper, tuple_impl};
 
 use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
@@ -361,57 +369,3 @@ impl<const SR: u32, const CH: u16> ConstSource<SR, CH> for Box<dyn ConstSource<S
         self.as_ref().total_duration()
     }
 }
-
-pub trait CollectConstSource<const SR: u32, const CH: u16, const N: usize, S>
-where
-    S: ConstSource<SR, CH>,
-{
-    fn collect_mixed(self) -> mixer::UniformArrayMixer<SR, CH, N, S>;
-    fn collect_list(self) -> list::UniformArrayList<SR, CH, N, S>;
-}
-
-impl<const SR: u32, const CH: u16, const N: usize, S> CollectConstSource<SR, CH, N, S> for [S; N]
-where
-    S: ConstSource<SR, CH>,
-{
-    fn collect_mixed(self) -> mixer::UniformArrayMixer<SR, CH, N, S> {
-        mixer::UniformArrayMixer { sources: self }
-    }
-    fn collect_list(self) -> list::UniformArrayList<SR, CH, N, S> {
-        list::UniformArrayList {
-            sources: self,
-            current: 0,
-        }
-    }
-}
-
-macro_rules! add_inner_methods {
-    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> $name<SR, CH, S$(,$t)?> {
-            pub fn inner(&self) -> &S {
-                &self.inner
-            }
-            pub fn inner_mut(&mut self) -> &mut S {
-                &mut self.inner
-            }
-            pub fn into_inner(self) -> S {
-                self.inner
-            }
-        }
-    };
-}
-
-pub(crate) use add_inner_methods;
-
-macro_rules! impl_wrapper {
-    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
-        impl<const SR: u32, const CH: u16, S: crate::ConstSource<SR, CH>$(,$t$(:$bound)?)?> crate::ConstSource<SR, CH>
-            for $name<SR, CH, S$(,$t)?>
-        {
-            fn total_duration(&self) -> Option<std::time::Duration> {
-                self.inner.total_duration()
-            }
-        }
-    };
-}
-pub(crate) use impl_wrapper;

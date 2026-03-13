@@ -1,11 +1,9 @@
-use std::fmt;
-
-use super::super::conversions::channel_count::ChannelConverter;
-use super::super::conversions::sample_rate::Resampler;
 use crate::FixedSource;
 use crate::{ChannelCount, SampleRate};
 
-use super::{IntoList, ParamsMismatch};
+use super::{IntoQueued, ParamsMismatch};
+use super::super::convert_if_needed;
+use super::super::MaybeConvert;
 
 macro_rules! tuple_impl {
     ($list:ident; $($generics:ident),+; $($count:tt),*; $last:tt) => {
@@ -56,11 +54,11 @@ macro_rules! tuple_impl {
             }
         } // impl FixedSource
 
-        impl<$($generics: FixedSource),+> IntoList for ($($generics),+) {
-            type TryListSource = $list<$($generics),+>;
-            type IntoListSource = $list<$(MaybeConvert<$generics>),+>;
+        impl<$($generics: FixedSource),+> IntoQueued for ($($generics),+) {
+            type TryQueuedSource = $list<$($generics),+>;
+            type IntoQueuedSource = $list<$(MaybeConvert<$generics>),+>;
 
-            fn try_into_list(self) -> Result<Self::TryListSource, ParamsMismatch> {
+            fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
                 let sample_rate_left = self.0.sample_rate();
                 let channel_count_left = self.0.channels();
 
@@ -90,7 +88,7 @@ macro_rules! tuple_impl {
                 self,
                 sample_rate: SampleRate,
                 channels: ChannelCount,
-            ) -> Self::IntoListSource{
+            ) -> Self::IntoQueuedSource{
 
                 let sources = (
                 $(
@@ -108,109 +106,17 @@ macro_rules! tuple_impl {
     }; // transcriber
 }
 
-pub enum MaybeConvert<S: FixedSource> {
-    OnlyResample(Resampler<S>),
-    OnlyRechannel(ChannelConverter<S>),
-    // more efficient when adding channels
-    ResampleThenRechannel(ChannelConverter<Resampler<S>>),
-    // more efficient when removing channels
-    RechannelThenResamples(Resampler<ChannelConverter<S>>),
-    Unchanged(S),
-}
-
-impl<S: FixedSource> fmt::Debug for MaybeConvert<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::OnlyResample(_) => f.debug_tuple("OnlyResample").finish_non_exhaustive(),
-            Self::OnlyRechannel(_) => f.debug_tuple("OnlyRechannel").finish_non_exhaustive(),
-            Self::ResampleThenRechannel(_) => f
-                .debug_tuple("ResampleThenRechannel")
-                .finish_non_exhaustive(),
-            Self::RechannelThenResamples(_) => f
-                .debug_tuple("RechannelThenResamples")
-                .finish_non_exhaustive(),
-            Self::Unchanged(_) => f.debug_tuple("Unchanged").finish_non_exhaustive(),
-        }
-    }
-}
-
-impl<S: FixedSource> FixedSource for MaybeConvert<S> {
-    fn channels(&self) -> ChannelCount {
-        match self {
-            MaybeConvert::OnlyResample(s) => s.channels(),
-            MaybeConvert::OnlyRechannel(s) => s.channels(),
-            MaybeConvert::ResampleThenRechannel(s) => s.channels(),
-            MaybeConvert::RechannelThenResamples(s) => s.channels(),
-            MaybeConvert::Unchanged(s) => s.channels(),
-        }
-    }
-
-    fn sample_rate(&self) -> SampleRate {
-        match self {
-            MaybeConvert::OnlyResample(s) => s.sample_rate(),
-            MaybeConvert::OnlyRechannel(s) => s.sample_rate(),
-            MaybeConvert::ResampleThenRechannel(s) => s.sample_rate(),
-            MaybeConvert::RechannelThenResamples(s) => s.sample_rate(),
-            MaybeConvert::Unchanged(s) => s.sample_rate(),
-        }
-    }
-
-    fn total_duration(&self) -> Option<std::time::Duration> {
-        match self {
-            MaybeConvert::OnlyResample(s) => s.total_duration(),
-            MaybeConvert::OnlyRechannel(s) => s.total_duration(),
-            MaybeConvert::ResampleThenRechannel(s) => s.total_duration(),
-            MaybeConvert::RechannelThenResamples(s) => s.total_duration(),
-            MaybeConvert::Unchanged(s) => s.total_duration(),
-        }
-    }
-}
-
-impl<S: FixedSource> Iterator for MaybeConvert<S> {
-    type Item = crate::Sample;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            MaybeConvert::OnlyResample(s) => s.next(),
-            MaybeConvert::OnlyRechannel(s) => s.next(),
-            MaybeConvert::ResampleThenRechannel(s) => s.next(),
-            MaybeConvert::RechannelThenResamples(s) => s.next(),
-            MaybeConvert::Unchanged(s) => s.next(),
-        }
-    }
-}
-
-pub(crate) fn convert_if_needed<S: FixedSource>(
-    s: S,
-    sample_rate: SampleRate,
-    channels: ChannelCount,
-) -> MaybeConvert<S> {
-    use crate::fixed_source::FixedSourceExt;
-    use MaybeConvert as M;
-    match (s.sample_rate() == sample_rate, s.channels() == channels) {
-        (true, true) => M::Unchanged(s),
-        (true, false) => M::OnlyRechannel(s.with_channel_count(channels)),
-        (false, true) => M::OnlyResample(s.with_sample_rate(sample_rate)),
-        (false, false) if s.channels() > channels => {
-            M::ResampleThenRechannel(s.with_sample_rate(sample_rate).with_channel_count(channels))
-        }
-        (false, false) => {
-            M::RechannelThenResamples(s.with_channel_count(channels).with_sample_rate(sample_rate))
-        }
-    }
-}
-
-tuple_impl! {TupleList2; S1,S2; 0;1}
-tuple_impl! {TupleList3; S1,S2,S3; 0,1;2}
-tuple_impl! {TupleList4; S1,S2,S3,S4; 0,1,2;3}
-tuple_impl! {TupleList5; S1,S2,S3,S4,S5; 0,1,2,3;4}
-tuple_impl! {TupleList6; S1,S2,S3,S4,S5,S6; 0,1,2,3,4;5}
-tuple_impl! {TupleList7; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5;6}
-tuple_impl! {TupleList8; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6;7}
-tuple_impl! {TupleList9; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7;8}
-tuple_impl! {TupleList10; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8;9}
-tuple_impl! {TupleList11; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9;10}
-tuple_impl! {TupleList12; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10;11}
+tuple_impl! {Queued2Tuple; S1,S2; 0;1}
+tuple_impl! {Queued3Tuple; S1,S2,S3; 0,1;2}
+tuple_impl! {Queued4Tuple; S1,S2,S3,S4; 0,1,2;3}
+tuple_impl! {Queued5Tuple; S1,S2,S3,S4,S5; 0,1,2,3;4}
+tuple_impl! {Queued6Tuple; S1,S2,S3,S4,S5,S6; 0,1,2,3,4;5}
+tuple_impl! {Queued7Tuple; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5;6}
+tuple_impl! {Queued8Tuple; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6;7}
+tuple_impl! {Queued9Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7;8}
+tuple_impl! {Queued10Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8;9}
+tuple_impl! {Queued11Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9;10}
+tuple_impl! {Queued12Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10;11}
 
 #[cfg(test)]
 pub(crate) mod tests {

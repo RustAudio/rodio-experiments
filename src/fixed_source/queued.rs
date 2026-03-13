@@ -7,25 +7,25 @@ mod array;
 mod tuple;
 mod vec;
 
-pub trait IntoList {
-    type TryListSource: FixedSource;
-    type IntoListSource: FixedSource;
+pub trait IntoQueued {
+    type TryQueuedSource: FixedSource;
+    type IntoQueuedSource: FixedSource;
 
-    fn try_into_list(self) -> Result<Self::TryListSource, ParamsMismatch>;
+    fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch>;
     fn into_list_converted(
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoListSource;
+    ) -> Self::IntoQueuedSource;
 }
 
 #[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
 pub struct ParamsMismatch {
-    index_of_first_mismatch: usize,
-    sample_rate_left: SampleRate,
-    channel_count_left: ChannelCount,
-    sample_rate_right: SampleRate,
-    channel_count_right: ChannelCount,
+    pub(crate) index_of_first_mismatch: usize,
+    pub(crate) sample_rate_left: SampleRate,
+    pub(crate) channel_count_left: ChannelCount,
+    pub(crate) sample_rate_right: SampleRate,
+    pub(crate) channel_count_right: ChannelCount,
 }
 
 impl Display for ParamsMismatch {

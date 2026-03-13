@@ -1,4 +1,4 @@
-use super::IntoList;
+use super::IntoQueued;
 use crate::ConstSource;
 
 macro_rules! tuple_impl {
@@ -54,10 +54,10 @@ macro_rules! tuple_impl {
             }
         } // impl FixedSource
 
-        impl<const SR: u32, const CH: u16, $($generics: ConstSource<SR, CH>),+> IntoList<SR, CH> for ($($generics),+) {
-            type ListSource = $list<SR, CH, $($generics),+>;
+        impl<const SR: u32, const CH: u16, $($generics: ConstSource<SR, CH>),+> IntoQueued<SR, CH> for ($($generics),+) {
+            type QueuedSource = $list<SR, CH, $($generics),+>;
 
-            fn into_list(self) -> Self::ListSource {
+            fn into_list(self) -> Self::QueuedSource {
                 $list {
                     sources: self,
                     current: 0,
@@ -67,17 +67,17 @@ macro_rules! tuple_impl {
     }; // transcriber
 }
 
-tuple_impl! {TupleList2; S1,S2; 0;1}
-tuple_impl! {TupleList3; S1,S2,S3; 0,1;2}
-tuple_impl! {TupleList4; S1,S2,S3,S4; 0,1,2;3}
-tuple_impl! {TupleList5; S1,S2,S3,S4,S5; 0,1,2,3;4}
-tuple_impl! {TupleList6; S1,S2,S3,S4,S5,S6; 0,1,2,3,4;5}
-tuple_impl! {TupleList7; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5;6}
-tuple_impl! {TupleList8; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6;7}
-tuple_impl! {TupleList9; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7;8}
-tuple_impl! {TupleList10; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8;9}
-tuple_impl! {TupleList11; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9;10}
-tuple_impl! {TupleList12; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10;11}
+tuple_impl! {Queued2Tuple; S1,S2; 0;1}
+tuple_impl! {Queued3Tuple; S1,S2,S3; 0,1;2}
+tuple_impl! {Queued4Tuple; S1,S2,S3,S4; 0,1,2;3}
+tuple_impl! {Queued5Tuple; S1,S2,S3,S4,S5; 0,1,2,3;4}
+tuple_impl! {Queued6Tuple; S1,S2,S3,S4,S5,S6; 0,1,2,3,4;5}
+tuple_impl! {Queued7Tuple; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5;6}
+tuple_impl! {Queued8Tuple; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6;7}
+tuple_impl! {Queued9Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7;8}
+tuple_impl! {Queued10Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8;9}
+tuple_impl! {Queued11Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9;10}
+tuple_impl! {Queued12Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10;11}
 
 #[cfg(test)]
 pub(crate) mod tests {

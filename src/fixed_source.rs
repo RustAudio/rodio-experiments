@@ -1,3 +1,4 @@
+use core::fmt;
 use std::time::Duration;
 
 use crate::ChannelCount;
@@ -31,8 +32,17 @@ use chain::SourceChain;
 pub mod buffer;
 pub mod chain;
 pub mod conversions;
-pub mod list;
+/// can add stuff on the fly after creation
 pub mod queue;
+/// can not be changed after creation
+pub mod queued;
+/// can not be changed after creation
+pub mod mixed;
+/// can add stuff on the fly after creation
+pub mod mixer;
+
+pub mod macros;
+pub(crate) use macros::{add_inner_methods, impl_wrapper, tuple_impl};
 
 use conversions::channel_count::ChannelConverter;
 use conversions::sample_rate::Resampler;
@@ -343,39 +353,94 @@ impl<const SR: u32, const CH: u16> std::fmt::Display for ParameterMismatch<SR, C
     }
 }
 
-macro_rules! add_inner_methods {
-    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
-        impl<S: crate::FixedSource $(,$t$(:$bound)?)?> $name<S $(,$t)?> {
-            pub fn inner(&self) -> &S {
-                &self.inner
-            }
-            pub fn inner_mut(&mut self) -> &mut S {
-                &mut self.inner
-            }
-            pub fn into_inner(self) -> S {
-                self.inner
-            }
-        }
-    };
+pub enum MaybeConvert<S: FixedSource> {
+    OnlyResample(Resampler<S>),
+    OnlyRechannel(ChannelConverter<S>),
+    // more efficient when adding channels
+    ResampleThenRechannel(ChannelConverter<Resampler<S>>),
+    // more efficient when removing channels
+    RechannelThenResamples(Resampler<ChannelConverter<S>>),
+    Unchanged(S),
 }
 
-pub(crate) use add_inner_methods;
-
-macro_rules! impl_wrapper {
-    ($name:ident$(<$t:ident$(:$bound:path)?>)?) => {
-        impl<S: crate::FixedSource $(,$t$(:$bound)?)?> crate::FixedSource for $name<S $(,$t)?> {
-            fn channels(&self) -> rodio::ChannelCount {
-                self.inner.channels()
-            }
-
-            fn sample_rate(&self) -> rodio::SampleRate {
-                self.inner.sample_rate()
-            }
-
-            fn total_duration(&self) -> Option<std::time::Duration> {
-                self.inner.total_duration()
-            }
+impl<S: FixedSource> fmt::Debug for MaybeConvert<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OnlyResample(_) => f.debug_tuple("OnlyResample").finish_non_exhaustive(),
+            Self::OnlyRechannel(_) => f.debug_tuple("OnlyRechannel").finish_non_exhaustive(),
+            Self::ResampleThenRechannel(_) => f
+                .debug_tuple("ResampleThenRechannel")
+                .finish_non_exhaustive(),
+            Self::RechannelThenResamples(_) => f
+                .debug_tuple("RechannelThenResamples")
+                .finish_non_exhaustive(),
+            Self::Unchanged(_) => f.debug_tuple("Unchanged").finish_non_exhaustive(),
         }
-    };
+    }
 }
-pub(crate) use impl_wrapper;
+
+impl<S: FixedSource> FixedSource for MaybeConvert<S> {
+    fn channels(&self) -> ChannelCount {
+        match self {
+            MaybeConvert::OnlyResample(s) => s.channels(),
+            MaybeConvert::OnlyRechannel(s) => s.channels(),
+            MaybeConvert::ResampleThenRechannel(s) => s.channels(),
+            MaybeConvert::RechannelThenResamples(s) => s.channels(),
+            MaybeConvert::Unchanged(s) => s.channels(),
+        }
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        match self {
+            MaybeConvert::OnlyResample(s) => s.sample_rate(),
+            MaybeConvert::OnlyRechannel(s) => s.sample_rate(),
+            MaybeConvert::ResampleThenRechannel(s) => s.sample_rate(),
+            MaybeConvert::RechannelThenResamples(s) => s.sample_rate(),
+            MaybeConvert::Unchanged(s) => s.sample_rate(),
+        }
+    }
+
+    fn total_duration(&self) -> Option<std::time::Duration> {
+        match self {
+            MaybeConvert::OnlyResample(s) => s.total_duration(),
+            MaybeConvert::OnlyRechannel(s) => s.total_duration(),
+            MaybeConvert::ResampleThenRechannel(s) => s.total_duration(),
+            MaybeConvert::RechannelThenResamples(s) => s.total_duration(),
+            MaybeConvert::Unchanged(s) => s.total_duration(),
+        }
+    }
+}
+
+impl<S: FixedSource> Iterator for MaybeConvert<S> {
+    type Item = crate::Sample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            MaybeConvert::OnlyResample(s) => s.next(),
+            MaybeConvert::OnlyRechannel(s) => s.next(),
+            MaybeConvert::ResampleThenRechannel(s) => s.next(),
+            MaybeConvert::RechannelThenResamples(s) => s.next(),
+            MaybeConvert::Unchanged(s) => s.next(),
+        }
+    }
+}
+
+pub(crate) fn convert_if_needed<S: FixedSource>(
+    s: S,
+    sample_rate: SampleRate,
+    channels: ChannelCount,
+) -> MaybeConvert<S> {
+    use crate::fixed_source::FixedSourceExt;
+    use MaybeConvert as M;
+    match (s.sample_rate() == sample_rate, s.channels() == channels) {
+        (true, true) => M::Unchanged(s),
+        (true, false) => M::OnlyRechannel(s.with_channel_count(channels)),
+        (false, true) => M::OnlyResample(s.with_sample_rate(sample_rate)),
+        (false, false) if s.channels() > channels => {
+            M::ResampleThenRechannel(s.with_sample_rate(sample_rate).with_channel_count(channels))
+        }
+        (false, false) => {
+            M::RechannelThenResamples(s.with_channel_count(channels).with_sample_rate(sample_rate))
+        }
+    }
+}
