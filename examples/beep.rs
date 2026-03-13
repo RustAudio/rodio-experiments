@@ -1,5 +1,5 @@
 use rodio_experiments::fixed_source::FixedSourceExt;
-use rodio_experiments::function::fixed_source::SineWave;
+use rodio_experiments::generators::fixed_source::function::SineWave;
 use rodio_experiments::speakers::SpeakersBuilder;
 use std::error::Error;
 use std::thread;
