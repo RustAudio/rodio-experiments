@@ -79,3 +79,50 @@ macro_rules! assert_error_traits {
 pub(crate) use assert_error_traits;
 #[allow(dead_code)]
 pub(crate) const fn use_required_traits<T: Send + Sync + 'static + Display + Debug + Clone>() {}
+
+macro_rules! mixed_next_body {
+    ($self:ident) => {
+        let (sum, summed) = $self
+            .sources
+            .iter_mut()
+            .filter_map(|source| source.next())
+            .map(|sample| sample as f64)
+            .zip((1usize..).into_iter())
+            .inspect(|things| println!("{things:?}"))
+            .reduce(|(sum, _), (sample, summed)| (sum + sample, summed))?;
+        Some((sum / summed as f64) as crate::Float)
+    };
+}
+pub(crate) use mixed_next_body;
+
+macro_rules! queued_next_body {
+    ($self:ident) => {
+        loop {
+            if let Some(sample) = $self.sources.get_mut($self.current)?.next() {
+                return Some(sample);
+            }
+            $self.current += 1;
+        }
+    };
+}
+pub(crate) use queued_next_body;
+
+macro_rules! check_params_for_list {
+    ($self:ident) => {
+        let mut list = $self.iter().map(|s| (s.sample_rate(), s.channels()));
+        if let Some(first) = list.next() {
+            if let Some((pos, (sample_rate_right, channel_count_right))) =
+                list.find_position(|params| *params != first)
+            {
+                return Err(ParamsMismatch {
+                    index_of_first_mismatch: pos,
+                    sample_rate_left: first.0,
+                    channel_count_left: first.1,
+                    sample_rate_right,
+                    channel_count_right,
+                });
+            }
+        };
+    };
+}
+pub(crate) use check_params_for_list;

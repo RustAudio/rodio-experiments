@@ -1,9 +1,9 @@
+use std::ops::Add;
 use std::time::Duration;
-
-use itertools::Itertools;
 
 use super::IntoQueued;
 use crate::ConstSource;
+use crate::common::queued_next_body;
 
 #[derive(Clone, Debug)]
 pub struct QueuedArray<const N: usize, const SR: u32, const CH: u16, S> {
@@ -16,35 +16,18 @@ impl<const N: usize, const SR: u32, const CH: u16, S: ConstSource<SR, CH>> Itera
 {
     type Item = crate::Sample;
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let sample = self.sources[self.current as usize].next();
-            if sample.is_some() {
-                return sample;
-            } else {
-                self.current += 1;
-                if self.current >= self.sources.len() {
-                    return None;
-                }
-                continue;
-            }
-        }
+        queued_next_body! {self}
     }
 }
 
 impl<const N: usize, const SR: u32, const CH: u16, S: ConstSource<SR, CH>> ConstSource<SR, CH>
     for QueuedArray<N, SR, CH, S>
 {
-    fn channels(&self) -> rodio::ChannelCount {
-        self.sources[0].channels()
-    }
-    fn sample_rate(&self) -> rodio::SampleRate {
-        self.sources[0].sample_rate()
-    }
     fn total_duration(&self) -> Option<std::time::Duration> {
         self.sources
             .iter()
-            .map(ConstSource::total_duration)
-            .fold_options(Duration::ZERO, |sum, s| sum + s)
+            .filter_map(ConstSource::total_duration)
+            .reduce(Duration::add)
     }
 }
 

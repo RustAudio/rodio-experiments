@@ -50,10 +50,24 @@ macro_rules! tuple_impl {
             }
 
             fn total_duration(&self) -> Option<std::time::Duration> {
-                self.sources
-                    .0
-                    .total_duration()
-                    .and_then(|d0| self.sources.1.total_duration().map(|d1| d1 + d0))
+                let mut max = None;
+                $(
+                    let dur= self.sources.$count.total_duration();
+                    max = match [max, dur] {
+                        [Some(max), None] => Some(max),
+                        [Some(max), Some(dur)] => Some(max.max(dur)),
+                        [None, Some(dur)] => Some(dur),
+                        [None, None] => None,
+                    };
+                )*
+                let dur= self.sources.$last.total_duration();
+                max = match [max, dur] {
+                    [Some(max), None] => Some(max),
+                    [Some(max), Some(dur)] => Some(max.max(dur)),
+                    [None, Some(dur)] => Some(dur),
+                    [None, None] => None,
+                };
+                max
             }
         } // impl FixedSource
 
