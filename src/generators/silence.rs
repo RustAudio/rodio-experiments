@@ -55,6 +55,10 @@ pub mod fixed_source {
         fn next(&mut self) -> Option<Self::Item> {
             Some(0.0)
         }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            (usize::MAX, None)
+        }
     }
 }
 
@@ -100,6 +104,10 @@ pub mod const_source {
 
         fn next(&mut self) -> Option<Self::Item> {
             Some(0.0)
+        }
+
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            (usize::MAX, None)
         }
     }
 }

@@ -88,6 +88,10 @@ macro_rules! signal_new_type {
             fn next(&mut self) -> Option<f32> {
                 self.inner.next()
             }
+
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                self.inner.size_hint()
+            }
         }
 
         impl<const SR: u32> ConstSource<SR, 1> for $name<SR> {
