@@ -308,6 +308,7 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
 }
 
 // we still need this. More fancy const generics will save us at some point :)
+#[derive(Clone)]
 pub struct ConstSourceAdapter<const SR: u32, const CH: u16, S>
 where
     S: ConstSource<SR, CH>,
