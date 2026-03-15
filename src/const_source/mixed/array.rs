@@ -39,7 +39,10 @@ impl<const N: usize, const SR: u32, const CH: u16, S: ConstSource<SR, CH>> IntoM
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use std::time::Duration;
+
     use super::IntoMixed;
+    use crate::ConstSource;
     use crate::const_source::buffer::SamplesBuffer;
 
     #[test]
@@ -50,6 +53,17 @@ pub(crate) mod tests {
         assert_eq!(
             vec![2.5, 3.5, 3.0],
             [s1, s2].into_mixed().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn duration() {
+        let s1 = SamplesBuffer::<1, 1>::new(vec![1.0, 2.0, 3.0]);
+        let s2 = SamplesBuffer::<1, 1>::new(vec![4.0, 5.0]);
+
+        assert_eq!(
+            Some(Duration::from_secs(3)),
+            [s1, s2].into_mixed().total_duration()
         );
     }
 }

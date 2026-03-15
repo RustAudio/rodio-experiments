@@ -42,7 +42,7 @@ pub mod mixed;
 pub mod mixer;
 
 pub mod macros;
-pub(crate) use macros::{add_inner_methods, impl_wrapper, tuple_impl};
+pub(crate) use macros::{add_inner_methods, impl_wrapper};
 
 use conversions::channel_count::ChannelConverter;
 use conversions::sample_rate::Resampler;

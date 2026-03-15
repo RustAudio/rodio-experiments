@@ -126,3 +126,23 @@ macro_rules! check_params_for_list {
     };
 }
 pub(crate) use check_params_for_list;
+
+macro_rules! for_in_tuple {
+    ($($index:tt),+;
+     for $tuple_item:ident in $tuple:expr; $do:block
+     ) => {
+        $(
+            let $tuple_item = &$tuple.$index;
+            $do
+        )+
+    };
+    ($($index:tt),+;
+     for mut $tuple_item:ident in $tuple:expr; $do:block
+     ) => {
+        $(
+            let $tuple_item = &mut $tuple.$index;
+            $do
+        )+
+    };
+}
+pub(crate) use for_in_tuple;

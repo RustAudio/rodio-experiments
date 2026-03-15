@@ -31,7 +31,7 @@ pub mod queue;
 pub mod queued;
 
 mod macros;
-pub(crate) use macros::{add_inner_methods, impl_wrapper, tuple_impl};
+pub(crate) use macros::{add_inner_methods, impl_wrapper};
 
 use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;

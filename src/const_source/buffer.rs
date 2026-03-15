@@ -10,7 +10,6 @@ use crate::ConstSource;
 pub struct SamplesBuffer<const SR: u32, const CH: u16> {
     data: Arc<[Sample]>,
     pos: usize,
-    duration: Duration,
 }
 
 impl<const SR: u32, const CH: u16> SamplesBuffer<SR, CH> {
@@ -30,17 +29,9 @@ impl<const SR: u32, const CH: u16> SamplesBuffer<SR, CH> {
         const { assert!(SR > 0) };
         const { assert!(CH > 0) };
 
-        let data: Arc<[f32]> = data.into().into();
-        let duration_ns =
-            1_000_000_000u64.checked_mul(data.len() as u64).unwrap() / SR as u64 / CH as u64;
-        let duration = Duration::new(
-            duration_ns / 1_000_000_000,
-            (duration_ns % 1_000_000_000) as u32,
-        );
         SamplesBuffer {
-            data,
+            data: data.into().into(),
             pos: 0,
-            duration,
         }
     }
 }
@@ -48,7 +39,15 @@ impl<const SR: u32, const CH: u16> SamplesBuffer<SR, CH> {
 impl<const SR: u32, const CH: u16> ConstSource<SR, CH> for SamplesBuffer<SR, CH> {
     #[inline]
     fn total_duration(&self) -> Option<Duration> {
-        Some(self.duration)
+        let duration_ns = 1_000_000_000u64
+            .checked_mul(self.data.len() as u64)
+            .unwrap()
+            / SR as u64
+            / CH as u64;
+        Some(Duration::new(
+            duration_ns / 1_000_000_000,
+            (duration_ns % 1_000_000_000) as u32,
+        ))
     }
     // /// This jumps in memory till the sample for `pos`.
     // #[inline]

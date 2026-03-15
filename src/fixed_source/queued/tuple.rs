@@ -1,12 +1,15 @@
+use std::time::Duration;
+
 use crate::FixedSource;
 use crate::{ChannelCount, SampleRate};
 
-use super::{IntoQueued, ParamsMismatch};
-use super::super::convert_if_needed;
 use super::super::MaybeConvert;
+use super::super::convert_if_needed;
+use super::{IntoQueued, ParamsMismatch};
+use crate::common::for_in_tuple;
 
 macro_rules! tuple_impl {
-    ($list:ident; $($generics:ident),+; $($count:tt),*; $last:tt) => {
+    ($list:ident; $($generics:ident),+; $($count:tt),*) => {
         #[derive(Clone, Debug)]
         pub struct $list<$($generics),+> {
             sources: ($($generics),+),
@@ -17,23 +20,21 @@ macro_rules! tuple_impl {
             type Item = crate::Sample;
 
             fn next(&mut self) -> Option<Self::Item> {
-                loop {
-                    match self.current {
-                        $($count => {
-                            let sample = self.sources.$count.next();
-                            if sample.is_some() {
-                                print!("{}", sample.unwrap() as u8);
-                                return sample;
-                            } else {
-                                println!("EXHAUSTED MOVING TO NEXT");
-                                self.current = $count + 1;
-                                continue
+                #![expect(unused, reason = "index += 1 is not used in the last iteration")]
+
+                let mut index = 0;
+                for_in_tuple! { $($count),+;
+                    for mut source in self.sources; {
+                        if index >= self.current {
+                            if let Some(sample) = source.next() {
+                                self.current = index;
+                                return Some(sample)
                             }
-                        }),*
-                        $last => return self.sources.$last.next(),
-                        _ => unreachable!("self.current is never increased beyond 1"),
-                    } // match
-                } // loop
+                        }
+                        index += 1;
+                    }
+                }
+                None
             } // next
         } // impl iter
 
@@ -47,10 +48,15 @@ macro_rules! tuple_impl {
             }
 
             fn total_duration(&self) -> Option<std::time::Duration> {
-                self.sources
-                    .0
-                    .total_duration()
-                    .and_then(|d0| self.sources.1.total_duration().map(|d1| d1 + d0))
+                let mut total_duration = Some(Duration::ZERO);
+                for_in_tuple! { $($count),+;
+                    for source in self.sources; {
+                        total_duration = total_duration
+                            .and_then(|d| source.total_duration()
+                                .map(|sd| d + sd))
+                    }
+                }
+                total_duration
             }
         } // impl FixedSource
 
@@ -59,24 +65,26 @@ macro_rules! tuple_impl {
             type IntoQueuedSource = $list<$(MaybeConvert<$generics>),+>;
 
             fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
-                let sample_rate_left = self.0.sample_rate();
-                let channel_count_left = self.0.channels();
+                #![expect(unused, reason = "index += 1 is not used in the last iteration")]
 
-                $(
-                let tuple_index_that_mismatched = $count;
-                let sample_rate_right = self.$count.sample_rate();
-                let channel_count_right = self.$count.channels();
+                let left = (self.0.sample_rate(), self.0.channels());
+                let mut index = 0;
 
-                if sample_rate_left != sample_rate_right || channel_count_left != channel_count_right {
-                    return Err(ParamsMismatch {
-                        index_of_first_mismatch: tuple_index_that_mismatched as usize,
-                        sample_rate_left,
-                        channel_count_left,
-                        sample_rate_right,
-                        channel_count_right,
-                    });
+                for_in_tuple! { $($count),+;
+                    for source in self; {
+                        let right = (source.sample_rate(), source.channels());
+                        if left != right {
+                            return Err(ParamsMismatch {
+                                index_of_first_mismatch: index as usize,
+                                sample_rate_left: left.0,
+                                channel_count_left: left.1,
+                                sample_rate_right: right.0,
+                                channel_count_right: right.1,
+                            });
+                        }
+                        index += 1;
+                    }
                 }
-                )+
 
                 Ok($list {
                     sources: self,
@@ -94,7 +102,6 @@ macro_rules! tuple_impl {
                 $(
                     convert_if_needed(self.$count, sample_rate, channels),
                 )+
-                    convert_if_needed(self.$last, sample_rate, channels)
                 );
 
                 $list {
@@ -106,17 +113,17 @@ macro_rules! tuple_impl {
     }; // transcriber
 }
 
-tuple_impl! {Queued2Tuple; S1,S2; 0;1}
-tuple_impl! {Queued3Tuple; S1,S2,S3; 0,1;2}
-tuple_impl! {Queued4Tuple; S1,S2,S3,S4; 0,1,2;3}
-tuple_impl! {Queued5Tuple; S1,S2,S3,S4,S5; 0,1,2,3;4}
-tuple_impl! {Queued6Tuple; S1,S2,S3,S4,S5,S6; 0,1,2,3,4;5}
-tuple_impl! {Queued7Tuple; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5;6}
-tuple_impl! {Queued8Tuple; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6;7}
-tuple_impl! {Queued9Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7;8}
-tuple_impl! {Queued10Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8;9}
-tuple_impl! {Queued11Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9;10}
-tuple_impl! {Queued12Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10;11}
+tuple_impl! {Queued2Tuple; S1,S2; 0,1}
+tuple_impl! {Queued3Tuple; S1,S2,S3; 0,1,2}
+tuple_impl! {Queued4Tuple; S1,S2,S3,S4; 0,1,2,3}
+tuple_impl! {Queued5Tuple; S1,S2,S3,S4,S5; 0,1,2,3,4}
+tuple_impl! {Queued6Tuple; S1,S2,S3,S4,S5,S6; 0,1,2,3,4,5}
+tuple_impl! {Queued7Tuple; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5,6}
+tuple_impl! {Queued8Tuple; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6,7}
+tuple_impl! {Queued9Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7,8}
+tuple_impl! {Queued10Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8,9}
+tuple_impl! {Queued11Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9,10}
+tuple_impl! {Queued12Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10,11}
 
 #[cfg(test)]
 pub(crate) mod tests {
@@ -177,6 +184,20 @@ pub(crate) mod tests {
             (s1, s2, s3)
                 .into_list_converted(nz!(1), nz!(1))
                 .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn into_list_converted_all_rechanneled_duration() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(1), vec![1.0; 1]); // 1s
+        let s2 = SamplesBuffer::new(nz!(3), nz!(1), vec![2.0; 3]); // 1s
+        let s3 = SamplesBuffer::new(nz!(2), nz!(1), vec![3.0; 4]); // 2s
+
+        assert_eq!(
+            Some(Duration::from_secs(1 + 1 + 2)),
+            (s1, s2, s3)
+                .into_list_converted(nz!(1), nz!(1))
+                .total_duration()
         );
     }
 }

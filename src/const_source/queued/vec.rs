@@ -2,8 +2,8 @@ use std::ops::Add;
 use std::time::Duration;
 
 use super::IntoQueued;
-use crate::common::queued_next_body;
 use crate::ConstSource;
+use crate::common::queued_next_body;
 
 #[derive(Clone, Debug)]
 pub struct QueuedVec<const SR: u32, const CH: u16, S> {
