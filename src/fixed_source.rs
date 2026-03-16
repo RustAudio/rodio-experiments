@@ -32,14 +32,14 @@ use chain::SourceChain;
 pub mod buffer;
 pub mod chain;
 pub mod conversions;
-/// can add stuff on the fly after creation
-pub mod queue;
-/// can not be changed after creation
-pub mod queued;
 /// can not be changed after creation
 pub mod mixed;
 /// can add stuff on the fly after creation
 pub mod mixer;
+/// can add stuff on the fly after creation
+pub mod queue;
+/// can not be changed after creation
+pub mod queued;
 
 pub mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};
@@ -353,6 +353,7 @@ impl<const SR: u32, const CH: u16> std::fmt::Display for ParameterMismatch<SR, C
     }
 }
 
+// TODO use this for inter FixedSource conversions
 pub enum MaybeConvert<S: FixedSource> {
     OnlyResample(Resampler<S>),
     OnlyRechannel(ChannelConverter<S>),
@@ -361,6 +362,18 @@ pub enum MaybeConvert<S: FixedSource> {
     // more efficient when removing channels
     RechannelThenResamples(Resampler<ChannelConverter<S>>),
     Unchanged(S),
+}
+
+impl<S: FixedSource + 'static> MaybeConvert<S> {
+    fn into_box_dyn(self) -> Box<dyn FixedSource> {
+        match self {
+            Self::OnlyResample(s) => Box::new(s),
+            Self::OnlyRechannel(s) => Box::new(s),
+            Self::ResampleThenRechannel(s) => Box::new(s),
+            Self::RechannelThenResamples(s) => Box::new(s),
+            Self::Unchanged(s) => Box::new(s),
+        }
+    }
 }
 
 impl<S: FixedSource> fmt::Debug for MaybeConvert<S> {

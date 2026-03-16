@@ -2,4 +2,5 @@ words = [
     "behaviour",
     "coeff",
     "rodio",
+    "uninit",
 ]
