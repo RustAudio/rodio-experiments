@@ -2,6 +2,8 @@
 use std::fmt::{Debug, Display};
 use std::num::NonZero;
 
+pub(crate) mod mixer;
+
 /// Sample rate (a frame rate or samples per second per channel).
 pub type SampleRate = NonZero<u32>;
 
