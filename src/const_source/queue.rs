@@ -1,107 +1,97 @@
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, mpsc};
+use std::num::NonZero;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+
+use itertools::Itertools;
 
 use crate::ConstSource;
-
-pub mod uniform;
+use crate::common::mixer::{MixerHandleInner, MixerKey, mixer_next_body};
+use crate::const_source::mixer::MixerHandle;
 
 pub struct Queue<const SR: u32, const CH: u16> {
-    current: Option<Box<dyn ConstSource<SR, CH>>>,
-    pending: mpsc::Receiver<(Box<dyn ConstSource<SR, CH>>, u32)>,
-    current_id: Arc<AtomicU32>,
+    sources: Vec<(Box<dyn ConstSource<SR, CH>>, MixerKey)>,
+    frame_offset: u16,
+    handle: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH>>>>,
 }
 
 impl<const SR: u32, const CH: u16> Queue<SR, CH> {
-    pub fn new() -> (Self, QueueHandle<SR, CH>) {
-        static QUEUE_ID: AtomicU32 = AtomicU32::new(0);
-
-        let queue_id = QUEUE_ID.fetch_add(1, Ordering::Relaxed);
-        assert!(queue_id < u32::MAX, "Can not create 4 billion queues");
-        let current_id = Arc::new(AtomicU32::new(0));
-
-        let (tx, rx) = mpsc::channel();
+    pub fn new() -> (QueueHandle<SR, CH>, Self) {
+        let handle = Arc::new(MixerHandleInner::new());
 
         (
-            Self {
-                current: None,
-                pending: rx,
-                current_id: Arc::clone(&current_id),
-            },
             QueueHandle {
-                queue_id,
-                next_id: Arc::new(AtomicU32::new(0)),
-                current_id,
-                tx,
+                inner: handle.clone(),
+            },
+            Self {
+                sources: Vec::new(),
+                frame_offset: 0,
+                handle,
             },
         )
     }
 }
 
-pub struct QueueHandle<const SR: u32, const CH: u16> {
-    queue_id: u32,
-    next_id: Arc<AtomicU32>,
-    current_id: Arc<AtomicU32>,
-    tx: mpsc::Sender<(Box<dyn ConstSource<SR, CH>>, u32)>,
-}
-
-pub struct SourceId {
-    pub queue_id: u32,
-    pub source_id: u32,
-}
-
-#[derive(Debug)]
-pub struct QueueDropped;
-
-impl<const SR: u32, const CH: u16> QueueHandle<SR, CH> {
-    pub fn add(&self, source: Box<dyn ConstSource<SR, CH>>) -> Result<SourceId, QueueDropped> {
-        // wraps on overflow, should be okay as long as there are < 4 million
-        // sources in the list.
-        let source_id = self.next_id.fetch_add(1, Ordering::Relaxed);
-        self.tx
-            .send((source, source_id))
-            .map_err(|_| QueueDropped)?;
-
-        Ok(SourceId {
-            queue_id: self.queue_id,
-            source_id,
-        })
-    }
-
-    pub fn current(&self) -> SourceId {
-        SourceId {
-            queue_id: self.queue_id,
-            source_id: self.current_id.load(Ordering::Relaxed),
-        }
-    }
-}
-
 impl<const SR: u32, const CH: u16> ConstSource<SR, CH> for Queue<SR, CH> {
     fn total_duration(&self) -> Option<std::time::Duration> {
-        None // endless
+        self.sources
+            .iter()
+            .map(|s| s.0.total_duration())
+            .fold_options(Duration::ZERO, |max, dur| max.max(dur))
     }
 }
 
 impl<const SR: u32, const CH: u16> Iterator for Queue<SR, CH> {
-    type Item = rodio::Sample;
+    type Item = crate::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(curr) = &mut self.current
-                && let Some(sample) = curr.next()
-            {
-                return Some(sample);
-            }
-
-            // No need to end the audio source when the queue handle drops
-            // that should be handled with a `Stoppable` wrapper instead.
-            let next = self.pending.try_recv().ok();
-
-            if let Some((source, id)) = next {
-                self.current = Some(source);
-                self.current_id.store(id, Ordering::Relaxed);
-            } else {
-                return Some(0.0);
-            }
-        }
+        let channel_count = NonZero::new(CH).unwrap();
+        mixer_next_body! {self, channel_count}
     }
 }
+
+pub type QueueHandle<const SR: u32, const CH: u16> = MixerHandle<SR, CH>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::const_source::buffer::SamplesBuffer;
+
+    #[test]
+    fn add_before_play() {
+        let a: SamplesBuffer<44100, 1> = SamplesBuffer::new([1.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new([1.0, 2.0]);
+        let (mixer, source) = Queue::new();
+        mixer.add(a);
+        mixer.add(b);
+
+        assert_eq!(vec![1.0, 2.5, 3.0], source.collect_vec())
+    }
+
+    #[test]
+    fn add_midway() {
+        let a: SamplesBuffer<44100, 1> = SamplesBuffer::new([1.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new(/*                         */ [1.0, 2.0]);
+        let (mixer, mut source) = Queue::new();
+        mixer.add(a);
+
+        let _ = source.by_ref().next();
+        mixer.add(b);
+
+        assert_eq!(vec![2.0, 2.5], source.collect_vec())
+    }
+
+    #[test]
+    fn add_is_frame_aligned() {
+        let a: SamplesBuffer<44100, 2> = SamplesBuffer::new([1.0, 1.0, 2.0, 2.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new(/*                              */ [1.0, 1.0, 2.0, 2.0]);
+        let (mixer, mut source) = Queue::new();
+        mixer.add(a);
+        assert_eq!(source.next(), Some(1.0));
+        mixer.add(b);
+        assert_eq!(source.next(), Some(1.0));
+
+        assert_eq!(vec![1.5, 1.5, 2.5, 2.5], source.collect_vec())
+    }
+}
+

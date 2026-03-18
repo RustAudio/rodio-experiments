@@ -75,9 +75,9 @@ impl Iterator for Mixer {
 
 #[derive(Clone)]
 pub struct MixerHandle {
-    sample_rate: SampleRate,
-    channel_count: ChannelCount,
-    inner: Arc<MixerHandleInner<Box<dyn FixedSource>>>,
+    pub(crate) sample_rate: SampleRate,
+    pub(crate) channel_count: ChannelCount,
+    pub(crate) inner: Arc<MixerHandleInner<Box<dyn FixedSource>>>,
 }
 
 impl MixerHandle {

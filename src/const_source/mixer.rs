@@ -61,7 +61,7 @@ impl<const SR: u32, const CH: u16> Iterator for Mixer<SR, CH> {
 
 #[derive(Clone)]
 pub struct MixerHandle<const SR: u32, const CH: u16> {
-    inner: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH>>>>,
+    pub(crate) inner: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH>>>>,
 }
 
 impl<const SR: u32, const CH: u16> MixerHandle<SR, CH> {

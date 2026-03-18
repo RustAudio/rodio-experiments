@@ -1,154 +1,126 @@
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::{Arc, mpsc};
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::time::Duration;
 
-use rodio::FixedSource;
-use rodio::{ChannelCount, SampleRate};
+use itertools::Itertools;
 
-pub mod uniform;
+use crate::FixedSource;
+use crate::common::mixer::{MixerHandleInner, MixerKey, mixer_next_body};
+use crate::fixed_source::mixer::MixerHandle;
+use crate::{ChannelCount, SampleRate};
 
 pub struct Queue {
-    channels: ChannelCount,
+    sources: Vec<(Box<dyn FixedSource>, MixerKey)>,
+    frame_offset: u16,
     sample_rate: SampleRate,
-    current: Option<Box<dyn FixedSource>>,
-    pending: mpsc::Receiver<(Box<dyn FixedSource>, u32)>,
-    current_id: Arc<AtomicU32>,
+    channel_count: ChannelCount,
+    handle: Arc<MixerHandleInner<Box<dyn FixedSource>>>,
 }
 
 impl Queue {
-    pub fn new(channels: ChannelCount, sample_rate: SampleRate) -> (Self, QueueHandle) {
-        static QUEUE_ID: AtomicU32 = AtomicU32::new(0);
-
-        let queue_id = QUEUE_ID.fetch_add(1, Ordering::Relaxed);
-        assert!(queue_id < u32::MAX, "Can not create 4 billion queues");
-        let current_id = Arc::new(AtomicU32::new(0));
-
-        let (tx, rx) = mpsc::channel();
+    pub fn new(sample_rate: SampleRate, channel_count: ChannelCount) -> (MixerHandle, Self) {
+        let handle = Arc::new(MixerHandleInner::new());
 
         (
-            Self {
-                channels,
+            MixerHandle {
                 sample_rate,
-                current: None,
-                pending: rx,
-                current_id: Arc::clone(&current_id),
+                channel_count,
+                inner: handle.clone(),
             },
-            QueueHandle {
-                channels,
+            Self {
                 sample_rate,
-                queue_id,
-                next_id: Arc::new(AtomicU32::new(0)),
-                current_id,
-                tx,
+                channel_count,
+                sources: Vec::new(),
+                frame_offset: 0,
+                handle,
             },
         )
     }
 }
 
-pub struct QueueHandle {
-    channels: ChannelCount,
-    sample_rate: SampleRate,
-    queue_id: u32,
-    next_id: Arc<AtomicU32>,
-    current_id: Arc<AtomicU32>,
-    tx: mpsc::Sender<(Box<dyn FixedSource>, u32)>,
-}
-
-pub struct SourceId {
-    pub queue_id: u32,
-    pub source_id: u32,
-}
-
-#[derive(Debug)]
-pub enum AddError {
-    QueueDropped,
-    WrongChannelCount {
-        expected: ChannelCount,
-        got: ChannelCount,
-    },
-    WrongSampleRate {
-        expected: SampleRate,
-        got: SampleRate,
-    },
-}
-
-impl QueueHandle {
-    pub fn try_add(&self, source: Box<dyn FixedSource>) -> Result<SourceId, AddError> {
-        if source.channels() != self.channels {
-            return Err(AddError::WrongChannelCount {
-                got: source.channels(),
-                expected: self.channels,
-            });
-        }
-        if source.sample_rate() != self.sample_rate {
-            return Err(AddError::WrongSampleRate {
-                got: source.sample_rate(),
-                expected: self.sample_rate,
-            });
-        }
-
-        // wraps on overflow, should be okay as long as there are < 4 million
-        // sources in the list.
-        let source_id = self.next_id.fetch_add(1, Ordering::Relaxed);
-        self.tx
-            .send((source, source_id))
-            .map_err(|_| AddError::QueueDropped)?;
-
-        Ok(SourceId {
-            queue_id: self.queue_id,
-            source_id,
-        })
-    }
-
-    pub fn current(&self) -> SourceId {
-        SourceId {
-            queue_id: self.queue_id,
-            source_id: self.current_id.load(Ordering::Relaxed),
-        }
-    }
-
-    pub fn channels(&self) -> crate::ChannelCount {
-        self.channels
-    }
-    pub fn sample_rate(&self) -> crate::SampleRate {
-        self.sample_rate
-    }
-}
-
 impl FixedSource for Queue {
-    fn total_duration(&self) -> Option<std::time::Duration> {
-        None // endless
-    }
-
     fn channels(&self) -> crate::ChannelCount {
-        self.channels
+        self.channel_count
     }
 
     fn sample_rate(&self) -> crate::SampleRate {
         self.sample_rate
     }
+
+    fn total_duration(&self) -> Option<std::time::Duration> {
+        self.sources
+            .iter()
+            .map(|s| s.0.total_duration())
+            .fold_options(Duration::ZERO, |max, dur| max.max(dur))
+    }
 }
 
 impl Iterator for Queue {
-    type Item = rodio::Sample;
+    type Item = crate::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(curr) = &mut self.current
-                && let Some(sample) = curr.next()
-            {
-                return Some(sample);
-            }
+        let channel_count = self.channel_count;
+        mixer_next_body! {self, channel_count}
+    }
+}
 
-            // No need to end the audio source when the queue handle drops
-            // that should be handled with a `Stoppable` wrapper instead.
-            let next = self.pending.try_recv().ok();
+pub type QueueHandle = MixerHandle;
 
-            if let Some((source, id)) = next {
-                self.current = Some(source);
-                self.current_id.store(id, Ordering::Relaxed);
-            } else {
-                return Some(0.0);
-            }
-        }
+#[cfg(test)]
+mod tests {
+    use crate::fixed_source::buffer::SamplesBuffer;
+    use crate::nz;
+
+    use super::*;
+
+    #[test]
+    fn add_before_play() {
+        let a = SamplesBuffer::new(nz!(1), nz!(44100), [1.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new(nz!(1), nz!(44100), [1.0, 2.0]);
+        let (mixer, source) = Queue::new(nz!(44100), nz!(1));
+        mixer.try_add(a).unwrap();
+        mixer.try_add(b).unwrap();
+
+        assert_eq!(vec![1.0, 2.5, 3.0], source.collect_vec())
+    }
+
+    #[test]
+    fn add_midway() {
+        let a = SamplesBuffer::new(nz!(1), nz!(44100), [1.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new(nz!(1), nz!(44100), /* */ [1.0, 2.0]);
+        let (mixer, mut source) = Queue::new(nz!(44100), nz!(1));
+        mixer.try_add(a).unwrap();
+
+        let _ = source.by_ref().next();
+        mixer.try_add(b).unwrap();
+
+        assert_eq!(vec![2.0, 2.5], source.collect_vec())
+    }
+
+    #[test]
+    fn start_empty() {
+        let (_, mut source) = Queue::new(nz!(44100), nz!(1));
+        assert_eq!(source.next(), None);
+        assert_eq!(source.next(), None);
+    }
+
+    #[test]
+    fn add_is_frame_aligned() {
+        let a = SamplesBuffer::new(nz!(2), nz!(44100), [1.0, 1.0, 2.0, 2.0, 3.0, 3.0]);
+        let b = SamplesBuffer::new(nz!(2), nz!(44100), /*     */ [1.0, 1.0, 2.0, 2.0]);
+        let (mixer, mut source) = Queue::new(nz!(44100), nz!(2));
+        mixer.try_add(a).unwrap();
+        assert_eq!(source.next(), Some(1.0));
+        mixer.try_add(b).unwrap();
+        assert_eq!(source.next(), Some(1.0));
+
+        assert_eq!(vec![1.5, 1.5, 2.5, 2.5], source.collect_vec())
+    }
+
+    #[test]
+    fn different_params_is_refused() {
+        let a = SamplesBuffer::new(nz!(2), nz!(44100), [1.0, 1.0]);
+        let (mixer, _) = Queue::new(nz!(44100), nz!(1));
+        assert!(mixer.try_add(a).is_err());
     }
 }
