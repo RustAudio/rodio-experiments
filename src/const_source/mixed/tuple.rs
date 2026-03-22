@@ -48,7 +48,7 @@ macro_rules! tuple_impl {
                 }
                 max
             }
-        } // impl FixedSource
+        } // impl ConstSource
 
         impl<const SR: u32, const CH: u16, $($generics: ConstSource<SR, CH>),+> IntoMixed<SR, CH> for ($($generics),+) {
             type MixedSource = $list<SR, CH, $($generics),+>;
