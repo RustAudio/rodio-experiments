@@ -22,6 +22,8 @@ pub mod buffer;
 mod chain;
 pub mod conversions;
 /// Can be added to after creation
+pub mod route_channels;
+/// Can be added to after creation
 pub mod mixer;
 /// Can not be changed after creation
 pub mod mixed;
