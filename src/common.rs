@@ -109,6 +109,23 @@ macro_rules! queued_next_body {
 }
 pub(crate) use queued_next_body;
 
+macro_rules! channel_combined_next_body {
+    ($self:ident) => {
+        let mut channel = 0;
+        for item in &mut $self.sources {
+            if (channel..(channel + item.channels().get())).contains(&$self.current) {
+                $self.current += 1;
+                $self.current %= CH_OUT;
+                return item.next();
+            } else {
+                channel += item.channels().get()
+            }
+        }
+        None
+    };
+}
+pub(crate) use channel_combined_next_body;
+
 macro_rules! check_params_for_list {
     ($self:ident) => {
         let mut list = $self.iter().map(|s| (s.sample_rate(), s.channels()));

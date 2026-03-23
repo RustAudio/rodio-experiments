@@ -14,7 +14,7 @@ macro_rules! assert_channel_counts {
 
         const fn channel_count_mismatch<const OUT: u16, $(const $channels: u16),+>()
         -> &'static str {
-            use $crate::const_source::route_channels::helpful_compile_time_error::*;
+            use $crate::const_source::route_channels::tuple::helpful_compile_time_error::*;
             const MSG_PART_A: &[u8] = b"Wrong output channel count (";
             const MSG_PART_B: &[u8] = b"). It should be the sum of the input channel counts (";
             const MSG_PART_C: &[u8] = b")";
