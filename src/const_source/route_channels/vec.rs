@@ -3,13 +3,13 @@ use crate::common::channel_combined_next_body;
 use crate::const_source::route_channels::CombineChannels;
 
 #[derive(Clone, Debug)]
-pub struct ChannelCombiningArray<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S> {
+pub struct ChannelCombiningVec<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S> {
     sources: Vec<S>,
     current: u16,
 }
 
 impl<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_IN>> Iterator
-    for ChannelCombiningArray<SR, CH_IN, CH_OUT, S>
+    for ChannelCombiningVec<SR, CH_IN, CH_OUT, S>
 {
     type Item = crate::Sample;
     fn next(&mut self) -> Option<Self::Item> {
@@ -18,7 +18,7 @@ impl<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_I
 }
 
 impl<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_IN>>
-    ConstSource<SR, CH_OUT> for ChannelCombiningArray<SR, CH_IN, CH_OUT, S>
+    ConstSource<SR, CH_OUT> for ChannelCombiningVec<SR, CH_IN, CH_OUT, S>
 {
     fn total_duration(&self) -> Option<std::time::Duration> {
         self.sources
@@ -42,7 +42,7 @@ pub struct ChannelCountMismatch {
 impl<const SR: u32, const CH_IN: u16, S: ConstSource<SR, CH_IN>> CombineChannels<SR, CH_IN>
     for Vec<S>
 {
-    type CombinerSource<const CH: u16> = ChannelCombiningArray<SR, CH_IN, CH, S>;
+    type CombinerSource<const CH: u16> = ChannelCombiningVec<SR, CH_IN, CH, S>;
     type Result<T> = Result<T, ChannelCountMismatch>;
 
     fn combine_channels<const CH: u16>(self) -> Self::Result<Self::CombinerSource<CH>> {

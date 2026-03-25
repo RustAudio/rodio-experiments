@@ -40,6 +40,7 @@ pub mod mixer;
 pub mod queue;
 /// can not be changed after creation
 pub mod queued;
+pub mod route_channels;
 
 pub mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};

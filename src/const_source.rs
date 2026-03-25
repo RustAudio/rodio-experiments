@@ -21,7 +21,6 @@ use crate::effects::const_source::TrackPosition;
 pub mod buffer;
 mod chain;
 pub mod conversions;
-/// Can be added to after creation
 pub mod route_channels;
 /// Can be added to after creation
 pub mod mixer;

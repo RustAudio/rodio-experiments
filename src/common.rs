@@ -111,11 +111,12 @@ pub(crate) use queued_next_body;
 
 macro_rules! channel_combined_next_body {
     ($self:ident) => {
+        let channels = $self.channels().get();
         let mut channel = 0;
         for item in &mut $self.sources {
             if (channel..(channel + item.channels().get())).contains(&$self.current) {
                 $self.current += 1;
-                $self.current %= CH_OUT;
+                $self.current %= channels;
                 return item.next();
             } else {
                 channel += item.channels().get()
