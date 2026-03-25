@@ -365,8 +365,8 @@ pub enum MaybeConvert<S: FixedSource> {
     Unchanged(S),
 }
 
-impl<S: FixedSource + 'static> MaybeConvert<S> {
-    fn into_box_dyn(self) -> Box<dyn FixedSource> {
+impl<S: FixedSource + Send + 'static> MaybeConvert<S> {
+    fn into_box_dyn(self) -> Box<dyn FixedSource + Send + 'static> {
         match self {
             Self::OnlyResample(s) => Box::new(s),
             Self::OnlyRechannel(s) => Box::new(s),

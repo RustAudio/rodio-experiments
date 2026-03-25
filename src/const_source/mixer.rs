@@ -6,7 +6,6 @@
 // thread and then move the sources over. To speed up the adding of a lot of
 // sources in batches we already put those in the newly allocated memory.
 
-use std::fmt::Display;
 use std::num::NonZero;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -14,6 +13,7 @@ use std::time::Duration;
 
 use itertools::Itertools;
 
+use crate::common::make_params_mismatch_error;
 use crate::common::mixer::{MixerHandleInner, MixerKey, mixer_next_body};
 use crate::{ChannelCount, SampleRate};
 use crate::ConstSource;
@@ -86,25 +86,7 @@ impl<const SR: u32, const CH: u16> MixerHandle<SR, CH> {
     }
 }
 
-#[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
-pub struct ParamsMismatch {
-    pub(crate) sample_rate_mixer: SampleRate,
-    pub(crate) channel_count_mixer: ChannelCount,
-    pub(crate) sample_rate_new: SampleRate,
-    pub(crate) channel_count_new: ChannelCount,
-}
-
-impl Display for ParamsMismatch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ParamsMismatch {
-            sample_rate_mixer,
-            channel_count_mixer,
-            sample_rate_new,
-            channel_count_new,
-        } = self;
-        f.write_fmt(format_args!("Parameters mismatch, the mixer is set up with sample rate: {sample_rate_mixer} and channel count: {channel_count_mixer}. You are trying to add a source with sample rate: {sample_rate_new} and {channel_count_new}. Try using `MixerHandle::add_converted` instead"))
-    }
-}
+make_params_mismatch_error! { "mixer", "MixerHandle" } 
 
 #[cfg(test)]
 mod tests {

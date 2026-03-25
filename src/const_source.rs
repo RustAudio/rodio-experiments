@@ -21,15 +21,15 @@ use crate::effects::const_source::TrackPosition;
 pub mod buffer;
 mod chain;
 pub mod conversions;
-pub mod route_channels;
-/// Can be added to after creation
-pub mod mixer;
 /// Can not be changed after creation
 pub mod mixed;
+/// Can be added to after creation
+pub mod mixer;
 /// Can be added to after creation
 pub mod queue;
 /// Can not be changed after creation
 pub mod queued;
+pub mod route_channels;
 
 mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};
@@ -363,11 +363,5 @@ where
 
     fn total_duration(&self) -> Option<std::time::Duration> {
         self.inner.total_duration()
-    }
-}
-
-impl<const SR: u32, const CH: u16> ConstSource<SR, CH> for Box<dyn ConstSource<SR, CH>> {
-    fn total_duration(&self) -> Option<Duration> {
-        self.as_ref().total_duration()
     }
 }

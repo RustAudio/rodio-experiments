@@ -55,6 +55,9 @@ use crate::math::PI;
 
 export_noise! {WhiteUniform, WhiteTriangular, WhiteGaussian, Velvet, Pink, Blue, Violet, Brownian, Red}
 
+impl_default! {WhiteUniform, WhiteTriangular, WhiteGaussian, Velvet, Pink, Blue, Violet, Brownian, Red}
+
+
 impl_noise! {
     /// Generates an infinite stream of uniformly distributed white noise
     /// samples in [-1.0, 1.0]. White noise generator - sounds like radio static
@@ -527,18 +530,6 @@ impl_noise! {
     }
 }
 
-macro_rules! export_noise {
-    ($($name:ident),*) => {
-        pub mod fixed_source {
-            $(pub use super::$name::fixed_source::$name;)*
-        }
-
-        pub mod const_source {
-            $(pub use super::$name::const_source::$name;)*
-        }
-    };
-}
-pub(crate) use export_noise;
 
 macro_rules! impl_noise {
     (
@@ -664,3 +655,30 @@ macro_rules! impl_noise {
 } // end macro
 
 pub(crate) use impl_noise;
+
+
+macro_rules! export_noise {
+    ($($name:ident),*) => {
+        pub mod fixed_source {
+            $(pub use super::$name::fixed_source::$name;)*
+        }
+
+        pub mod const_source {
+            $(pub use super::$name::const_source::$name;)*
+        }
+    };
+}
+pub(crate) use export_noise;
+
+
+macro_rules! impl_default {
+    ($($name:ident),+) => {
+        $(impl<const SR: u32> Default for const_source::$name<SR> {
+            fn default() -> Self {
+               Self::new()
+            }
+        })+
+    } //end transcriber
+}
+
+pub(crate) use impl_default; 

@@ -92,6 +92,12 @@ pub mod const_source {
             Self
         }
     }
+    
+    impl<const SR: u32> Default for Silence<SR> {
+        fn default() -> Self {
+            Self
+        }
+    }
 
     impl<const SR: u32> ConstSource<SR, 1> for Silence<SR> {
         fn total_duration(&self) -> Option<std::time::Duration> {

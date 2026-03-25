@@ -3,6 +3,7 @@ use std::fmt::{Debug, Display};
 use std::num::NonZero;
 
 pub(crate) mod mixer;
+pub(crate) mod queue;
 
 /// Sample rate (a frame rate or samples per second per channel).
 pub type SampleRate = NonZero<u32>;
@@ -166,3 +167,74 @@ macro_rules! for_in_tuple {
     };
 }
 pub(crate) use for_in_tuple;
+
+macro_rules! make_params_mismatch_error {
+    ($combiner:literal, $combiner_handle_ty:literal) => {
+        #[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
+        pub struct ParamsMismatch {
+            pub(crate) sample_rate_mixer: crate::SampleRate,
+            pub(crate) channel_count_mixer: crate::ChannelCount,
+            pub(crate) sample_rate_new: crate::SampleRate,
+            pub(crate) channel_count_new: crate::ChannelCount,
+        }
+
+        impl std::fmt::Display for ParamsMismatch {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let ParamsMismatch {
+                    sample_rate_mixer,
+                    channel_count_mixer,
+                    sample_rate_new,
+                    channel_count_new,
+                } = self;
+                f.write_fmt(format_args!("Parameters mismatch, the {} is set up with sample rate: {sample_rate_mixer} and channel count: {channel_count_mixer}. You are trying to add a source with sample rate: {sample_rate_new} and {channel_count_new}. Try using `{}::add_converted` instead", $combiner, $combiner_handle_ty))
+            }
+        }
+    }
+}
+pub(crate) use make_params_mismatch_error;
+
+pub(crate) struct SourceShare<S, K> {
+    capacity: usize,
+    len: usize,
+    to_remove: Vec<K>,
+    /// we do not allocate on the audio thread
+    /// instead the handle does that
+    new_vec: Vec<(S, K)>,
+    /// we do not deallocate on the audio thread
+    /// instead the handle does that
+    old_vec: Option<Vec<(S, K)>>,
+}
+
+impl<S, K: PartialEq> SourceShare<S, K> {
+    pub(crate) fn schedule_addition(&mut self, source: S, key: K) {
+        let _drop = self.old_vec.take();
+
+        if self.len + 1 >= self.capacity {
+            self.capacity *= 2;
+        }
+        self.new_vec
+            .reserve(self.capacity.saturating_sub(self.new_vec.capacity()));
+        self.new_vec.push((source, key));
+    }
+
+    pub(crate) fn update(&mut self, current_vec: &mut Vec<(S, K)>) {
+        current_vec.retain(|(_, key)| !self.to_remove.contains(key));
+
+        swap_append(current_vec, &mut self.new_vec);
+
+        self.old_vec = Some(std::mem::take(&mut self.new_vec));
+    }
+
+    pub(crate) fn schedule_removal(&mut self, key: K) {
+        self.to_remove.push(key);
+    }
+}
+
+fn swap_append<T>(curr: &mut Vec<T>, new: &mut Vec<T>) {
+    // dear compiler please optimize this to something sensible so I do not have
+    // to use unsafe code
+    for (idx, element) in curr.drain(..).enumerate() {
+        new.insert(idx, element)
+    }
+    std::mem::swap(curr, new);
+}

@@ -199,6 +199,7 @@ pub(crate) struct LimitMulti {
 /// 1. Below threshold - knee_width: No compression (returns 0.0)
 /// 2. Within knee region: Gradual compression with quadratic curve
 /// 3. Above threshold + knee_width: Linear compression
+///
 /// Optimized for the most common case where samples are below threshold and no
 /// limiting is needed
 #[inline]

@@ -6,7 +6,6 @@
 // thread and then move the sources over. To speed up the adding of a lot of
 // sources in batches we already put those in the newly allocated memory.
 
-use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -14,16 +13,17 @@ use std::time::Duration;
 use itertools::Itertools;
 
 use crate::FixedSource;
+use crate::common::make_params_mismatch_error;
 use crate::common::mixer::{MixerHandleInner, MixerKey, mixer_next_body};
 use crate::fixed_source::convert_if_needed;
 use crate::{ChannelCount, SampleRate};
 
 pub struct Mixer {
-    sources: Vec<(Box<dyn FixedSource>, MixerKey)>,
+    sources: Vec<(Box<dyn FixedSource + Send + 'static>, MixerKey)>,
     frame_offset: u16,
     sample_rate: SampleRate,
     channel_count: ChannelCount,
-    handle: Arc<MixerHandleInner<Box<dyn FixedSource>>>,
+    handle: Arc<MixerHandleInner<Box<dyn FixedSource + Send + 'static>>>,
 }
 
 impl Mixer {
@@ -77,11 +77,14 @@ impl Iterator for Mixer {
 pub struct MixerHandle {
     pub(crate) sample_rate: SampleRate,
     pub(crate) channel_count: ChannelCount,
-    pub(crate) inner: Arc<MixerHandleInner<Box<dyn FixedSource>>>,
+    pub(crate) inner: Arc<MixerHandleInner<Box<dyn FixedSource + Send + 'static>>>,
 }
 
 impl MixerHandle {
-    pub fn try_add(&self, source: impl FixedSource + 'static) -> Result<MixerKey, ParamsMismatch> {
+    pub fn try_add(
+        &self,
+        source: impl FixedSource + Send + 'static,
+    ) -> Result<MixerKey, ParamsMismatch> {
         if (source.sample_rate(), source.channels()) != (self.sample_rate, self.channel_count) {
             return Err(ParamsMismatch {
                 sample_rate_mixer: self.sample_rate,
@@ -91,11 +94,11 @@ impl MixerHandle {
             });
         }
 
-        let source = Box::new(source) as Box<dyn FixedSource>;
+        let source = Box::new(source) as Box<dyn FixedSource + Send + 'static>;
         Ok(self.inner.add_unchecked(source))
     }
 
-    pub fn add_converted(&self, source: impl FixedSource + 'static) -> MixerKey {
+    pub fn add_converted(&self, source: impl FixedSource + Send + 'static) -> MixerKey {
         let source = convert_if_needed(source, self.sample_rate, self.channel_count).into_box_dyn();
         self.inner.add_unchecked(source)
     }
@@ -113,25 +116,7 @@ impl MixerHandle {
     }
 }
 
-#[derive(Debug, Clone, Copy, thiserror::Error, PartialEq, Eq)]
-pub struct ParamsMismatch {
-    pub(crate) sample_rate_mixer: SampleRate,
-    pub(crate) channel_count_mixer: ChannelCount,
-    pub(crate) sample_rate_new: SampleRate,
-    pub(crate) channel_count_new: ChannelCount,
-}
-
-impl Display for ParamsMismatch {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ParamsMismatch {
-            sample_rate_mixer,
-            channel_count_mixer,
-            sample_rate_new,
-            channel_count_new,
-        } = self;
-        f.write_fmt(format_args!("Parameters mismatch, the mixer is set up with sample rate: {sample_rate_mixer} and channel count: {channel_count_mixer}. You are trying to add a source with sample rate: {sample_rate_new} and {channel_count_new}. Try using `MixerHandle::add_converted` instead"))
-    }
-}
+make_params_mismatch_error! { "mixer", "MixerHandle" }
 
 #[cfg(test)]
 mod tests {
