@@ -13,6 +13,7 @@ thiserror = "2.0.17"
 rand = "0.10.0"
 rand_distr = "0.6.0"
 dasp_sample = "0.11.0"
+roots = "0.0.8"
 
 [dev-dependencies]
 spectrum-analyzer = "1.7.0"

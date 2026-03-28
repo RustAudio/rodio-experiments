@@ -916,10 +916,17 @@ dependencies = [
  "rand 0.10.0",
  "rand_distr 0.6.0",
  "rodio",
+ "roots",
  "rubato",
  "spectrum-analyzer",
  "thiserror 2.0.17",
 ]
+
+[[package]]
+name = "roots"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "082f11ffa03bbef6c2c6ea6bea1acafaade2fd9050ae0234ab44a2153742b058"
 
 [[package]]
 name = "rtrb"

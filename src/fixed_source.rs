@@ -1,6 +1,7 @@
 use core::fmt;
 use std::time::Duration;
 
+use crate::effects::amplify::Factor;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
@@ -12,11 +13,11 @@ use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::Dither;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
+use crate::effects::fixed_source::FadeOutAfter;
 use crate::effects::fixed_source::LinearGainRamp;
 use crate::effects::fixed_source::TrackPosition;
 
 use crate::ConstSource;
-use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::dither::Algorithm as DitherAlgorithm;
 use crate::effects::fixed_source::BltFilter;
@@ -236,6 +237,14 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         FadeOut::new(self, duration)
+    }
+
+    #[doc = include_str!("effects/fade_out_after.md")]
+    fn fade_out_after(self, start_after: Duration, fade_duration: Duration) -> FadeOutAfter<Self>
+    where
+        Self: Sized,
+    {
+        FadeOutAfter::new(self, start_after, fade_duration)
     }
 
     #[doc = include_str!("effects/linear_gain_ramp.md")]

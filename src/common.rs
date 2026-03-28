@@ -91,7 +91,6 @@ macro_rules! mixed_next_body {
             .filter_map(|source| source.next())
             .map(|sample| sample as f64)
             .zip((1usize..).into_iter())
-            .inspect(|things| println!("{things:?}"))
             .reduce(|(sum, _), (sample, summed)| (sum + sample, summed))?;
         Some((sum / summed as f64) as crate::Float)
     };

@@ -2,6 +2,7 @@ use std::num::NonZeroU16;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
+use crate::effects::amplify::Factor;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
@@ -14,6 +15,7 @@ use crate::effects::const_source::Distortion;
 use crate::effects::const_source::Dither;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
+use crate::effects::const_source::FadeOutAfter;
 use crate::effects::const_source::LinearGainRamp;
 use crate::effects::const_source::TrackPosition;
 
@@ -36,7 +38,6 @@ pub(crate) use macros::{add_inner_methods, impl_wrapper};
 
 use crate::const_source::buffer::SamplesBuffer;
 use crate::const_source::conversions::channelcount::ChannelConvertor;
-use crate::effects::amplify::Factor;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::blt::BltFormula;
 use crate::effects::const_source::BltFilter;
@@ -234,6 +235,18 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         FadeOut::new(self, duration)
+    }
+
+    #[doc = include_str!("effects/fade_out_after.md")]
+    fn fade_out_after(
+        self,
+        start_after: Duration,
+        fade_duration: Duration,
+    ) -> FadeOutAfter<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        FadeOutAfter::new(self, start_after, fade_duration)
     }
 
     #[doc = include_str!("effects/linear_gain_ramp.md")]

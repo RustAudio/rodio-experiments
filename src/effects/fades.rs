@@ -31,6 +31,41 @@ pub(super) mod fade_out {
     }
 }
 
+pub(super) mod fade_out_after {
+    use super::*;
+    pure_effect! {
+        struct FadeOutAfter {
+            ramp: Ramp,
+            samples_until_ramp: usize,
+        }
+
+        fn next(&mut self) -> Option<Sample> {
+            let sr = self.inner.sample_rate();
+            let ch = self.inner.channels();
+            let sample = self.inner.next()?;
+
+            Some(if self.samples_until_ramp == 0 {
+                self.ramp.apply(sample, ch, sr)
+            } else {
+                self.samples_until_ramp -= 1;
+                sample
+            })
+        }
+
+        fn new(source: S, start_after: Duration, fade_duration: Duration) -> FadeOut<Self> {
+            let samples_until_ramp = source.sample_rate().get() as f64
+                * source.channels().get() as f64
+                * start_after.as_secs_f64();
+
+            Self {
+                inner: source,
+                ramp: Ramp::new(fade_duration, 1.0, 0.0, true),
+                samples_until_ramp: samples_until_ramp as usize,
+            }
+        }
+    }
+}
+
 pub(super) mod fade_in {
     use super::*;
     pure_effect! {
