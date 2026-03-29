@@ -1,21 +1,7 @@
 use rodio::math::db_to_linear;
 
 use crate::effects::pure_effect;
-
-fn normalized_to_linear(normalized: f32) -> f32 {
-    const NORMALIZATION_MIN: f32 = 0.0;
-    const NORMALIZATION_MAX: f32 = 1.0;
-    const LOG_VOLUME_GROWTH_RATE: f32 = 6.907_755_4;
-    const LOG_VOLUME_SCALE_FACTOR: f32 = 1000.0;
-
-    let normalized = normalized.clamp(NORMALIZATION_MIN, NORMALIZATION_MAX);
-
-    let mut amplitude = f32::exp(LOG_VOLUME_GROWTH_RATE * normalized) / LOG_VOLUME_SCALE_FACTOR;
-    if normalized < 0.1 {
-        amplitude *= normalized * 10.0;
-    }
-    amplitude
-}
+use crate::math::normalized_to_linear;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Factor {

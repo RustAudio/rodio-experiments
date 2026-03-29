@@ -2,7 +2,6 @@ use std::num::NonZeroU16;
 use std::num::NonZeroU32;
 use std::time::Duration;
 
-use crate::effects::amplify::Factor;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
@@ -10,9 +9,12 @@ use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
 use crate::const_source::chain::SourceChain;
+use crate::effects::IntoEnvelope;
+use crate::effects::amplify::Factor;
 use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
 use crate::effects::const_source::Dither;
+use crate::effects::const_source::Fade;
 use crate::effects::const_source::FadeIn;
 use crate::effects::const_source::FadeOut;
 use crate::effects::const_source::FadeOutAfter;
@@ -247,6 +249,13 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         FadeOutAfter::new(self, start_after, fade_duration)
+    }
+
+    fn fade<E: IntoEnvelope>(self, envelope: E) -> Fade<SR, CH, Self, E::Envelope>
+    where
+        Self: Sized,
+    {
+        Fade::new(self, envelope)
     }
 
     #[doc = include_str!("effects/linear_gain_ramp.md")]

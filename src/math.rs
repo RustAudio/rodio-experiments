@@ -10,9 +10,9 @@ pub(crate) const NANOS_PER_SEC: u64 = 1_000_000_000;
 // Re-export float constants with appropriate precision for the Float type.
 // This centralizes all cfg gating for constants in one place.
 #[cfg(not(feature = "64bit"))]
-pub use std::f32::consts::{E, LN_10, LN_2, LOG10_2, LOG10_E, LOG2_10, LOG2_E, PI, TAU};
+pub use std::f32::consts::{E, LN_2, LN_10, LOG2_10, LOG2_E, LOG10_2, LOG10_E, PI, TAU};
 #[cfg(feature = "64bit")]
-pub use std::f64::consts::{E, LN_10, LN_2, LOG10_2, LOG10_E, LOG2_10, LOG2_E, PI, TAU};
+pub use std::f64::consts::{E, LN_2, LN_10, LOG2_10, LOG2_E, LOG10_2, LOG10_E, PI, TAU};
 
 /// Linear interpolation between two samples.
 ///
@@ -113,6 +113,21 @@ pub(crate) fn duration_to_coefficient(duration: Duration, sample_rate: SampleRat
     Float::exp(-1.0 / (duration_to_float(duration) * sample_rate.get() as Float))
 }
 
+pub(crate) fn normalized_to_linear(normalized: f32) -> f32 {
+    const NORMALIZATION_MIN: f32 = 0.0;
+    const NORMALIZATION_MAX: f32 = 1.0;
+    const LOG_VOLUME_GROWTH_RATE: f32 = 6.907_755_4;
+    const LOG_VOLUME_SCALE_FACTOR: f32 = 1000.0;
+
+    let normalized = normalized.clamp(NORMALIZATION_MIN, NORMALIZATION_MAX);
+
+    let mut amplitude = f32::exp(LOG_VOLUME_GROWTH_RATE * normalized) / LOG_VOLUME_SCALE_FACTOR;
+    if normalized < 0.1 {
+        amplitude *= normalized * 10.0;
+    }
+    amplitude
+}
+
 /// Convert Duration to Float with appropriate precision for the Sample type.
 #[inline]
 #[must_use]
@@ -134,11 +149,7 @@ pub(crate) fn nearest_multiple_of_two(n: u32) -> u32 {
     }
     let next = n.next_power_of_two();
     let prev = next >> 1;
-    if n - prev <= next - n {
-        prev
-    } else {
-        next
-    }
+    if n - prev <= next - n { prev } else { next }
 }
 
 /// Utility macro for getting a `NonZero` from a literal. Especially
@@ -163,5 +174,4 @@ macro_rules! nz {
 
 pub use nz;
 
-use crate::{common::Float, Sample};
-
+use crate::{Sample, common::Float};

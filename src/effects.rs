@@ -4,8 +4,8 @@ pub mod blt;
 mod channel_volume;
 mod distortion;
 pub mod dither;
+pub mod fade;
 mod fades;
-mod fade; // new replacement
 mod inspect;
 pub mod limiter;
 mod pausable;
@@ -15,6 +15,8 @@ mod stoppable;
 mod take_duration;
 mod take_samples;
 mod with_data;
+
+pub use fade::{Envelope, IntoEnvelope};
 
 // we can only get the structure: effects::effect::source_type::Struct with a macro
 // so we re-export the structs here to get the nicer structure:
@@ -30,6 +32,7 @@ pub mod fixed_source {
     pub use super::fades::fade_out::fixed_source::FadeOut;
     pub use super::fades::fade_out_after::fixed_source::FadeOutAfter;
     pub use super::fades::linear_ramp::fixed_source::LinearGainRamp;
+    pub use super::fade::fixed_source::Fade;
     pub use super::inspect::fixed_source::InspectFrame;
     pub use super::limiter::fixed_source::Limit;
     pub use super::pausable::fixed_source::Pausable;
@@ -51,6 +54,7 @@ pub mod const_source {
     pub use super::fades::fade_out::const_source::FadeOut;
     pub use super::fades::fade_out_after::const_source::FadeOutAfter;
     pub use super::fades::linear_ramp::const_source::LinearGainRamp;
+    pub use super::fade::const_source::Fade;
     pub use super::inspect::const_source::InspectFrame;
     pub use super::limiter::const_source::Limit;
     pub use super::pausable::const_source::Pausable;
@@ -67,6 +71,7 @@ pub mod dynamic_source {
     pub use super::periodic_access::dynamic_source::PeriodicAccess;
     pub use super::stoppable::dynamic_source::Stoppable;
     pub use super::with_data::dynamic_source::WithData;
+    pub use super::amplify::dynamic_source::Amplify;
 }
 
 macro_rules! pure_effect {
@@ -144,7 +149,8 @@ macro_rules! pure_effect {
                 $($field: $field_ty,)*
             }
             fn next(&mut $self) -> Option<Sample> $body
-            fn new($($factory_args)*) -> $factory_name<Self> $factory_body
+            fn new$(<$new_generic: $new_bound>)?($($factory_args)*) 
+                -> $factory_name<Self> $factory_body
             $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }
     }

@@ -6,8 +6,9 @@ use crate::Float;
 use crate::Source as DynamicSource;
 use crate::dynamic_source::conversions::channel_count::VariableInputChannelConvertor;
 use crate::dynamic_source::conversions::sample_rate::VariableInputResampler;
+use crate::effects::amplify::Factor;
 use crate::effects::dynamic_source::Distortion;
-use crate::effects::dynamic_source::{Pausable, PeriodicAccess, Stoppable, WithData};
+use crate::effects::dynamic_source::{Amplify, Pausable, PeriodicAccess, Stoppable, WithData};
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
@@ -23,6 +24,14 @@ pub trait ExtendDynamicSource {
     ) -> IntoFixedSource<Self>
     where
         Self: DynamicSource + Sized;
+
+    #[doc = include_str!("effects/amplify.md")]
+    fn amplify(self, factor: Factor) -> Amplify<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        Amplify::new(self, factor)
+    }
 
     #[doc = include_str!("effects/stoppable.md")]
     fn stoppable(self) -> Stoppable<Self>

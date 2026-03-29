@@ -1,16 +1,18 @@
 use core::fmt;
 use std::time::Duration;
 
-use crate::effects::amplify::Factor;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
+use crate::effects::IntoEnvelope;
+use crate::effects::amplify::Factor;
 use crate::effects::blt::BltFormula;
 use crate::effects::fixed_source::ChannelVolume;
 use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::Dither;
+use crate::effects::fixed_source::Fade;
 use crate::effects::fixed_source::FadeIn;
 use crate::effects::fixed_source::FadeOut;
 use crate::effects::fixed_source::FadeOutAfter;
@@ -245,6 +247,13 @@ pub trait FixedSourceExt: FixedSource {
         Self: Sized,
     {
         FadeOutAfter::new(self, start_after, fade_duration)
+    }
+
+    fn fade<E: IntoEnvelope>(self, envelope: E) -> Fade<Self, E::Envelope>
+    where
+        Self: Sized,
+    {
+        Fade::new(self, envelope)
     }
 
     #[doc = include_str!("effects/linear_gain_ramp.md")]
