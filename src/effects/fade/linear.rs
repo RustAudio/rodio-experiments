@@ -86,10 +86,11 @@ impl Envelope for LinearEnvelope {
         } else {
             let diff = self.gain.end() - self.gain.start();
             let progress = (self.step - self.skip) as f32 / self.steps as f32;
-            diff * progress
+            self.gain.start() + diff * progress
         };
 
-        self.scale.gain_to_linear(gain)
+        self.step += 1;
+        self.scale.gain_to_linear(dbg!(gain))
     }
     fn seek(&mut self, _position: usize) {
         todo!()

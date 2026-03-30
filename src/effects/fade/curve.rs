@@ -105,17 +105,19 @@ impl IntoEnvelope for CurveBuilder {
 impl Envelope for CurveEnvelope {
     fn linear_gain(&mut self) -> f32 {
         let gain = if self.step < self.skip {
+            dbg!();
             self.bezier.pre_y()
         } else if self.step > self.skip + self.steps {
+            dbg!();
             self.bezier.post_y()
         } else {
-            let x = self.step as f32 / self.steps as f32;
-            self.steps += 1;
+            let x = (self.step - self.skip) as f32 / self.steps as f32;
             let t = self.bezier.t(x);
             self.bezier.y(t)
         };
 
-        self.scale.gain_to_linear(gain)
+        self.step += 1;
+        self.scale.gain_to_linear(dbg!(gain))
     }
 
     fn seek(&mut self, _: usize) {

@@ -3,9 +3,9 @@ use crate::SampleRate;
 use crate::effects::pure_effect;
 use crate::math::normalized_to_linear;
 
-mod bezier;
+mod curve;
 mod linear;
-pub use bezier::{CurveControls, CurveEnvelope};
+pub use curve::{CurveControls, CurveEnvelope};
 pub use linear::LinearEnvelope;
 
 pub trait IntoEnvelope {
