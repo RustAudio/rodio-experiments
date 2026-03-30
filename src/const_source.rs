@@ -272,7 +272,7 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     /// # use rodio_experiments::const_source::buffer::SamplesBuffer;
     /// let preamble = SamplesBuffer::<44100, 1>::new([1.0, 1.0]);
     /// let signal = SamplesBuffer::<44100, 1>::new([2.0, 2.0]);
-
+    ///
     /// let mixed = preamble.chain_source(signal);
     /// assert_eq!(mixed.collect::<Vec<_>>(), vec![1.0,1.0,2.0,2.0])
     /// ```

@@ -271,7 +271,7 @@ pub trait FixedSourceExt: FixedSource {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let preamble = SamplesBuffer::new(nz!(1), nz!(1), [1.0, 1.0]);
     /// let signal = SamplesBuffer::new(nz!(1), nz!(1), [2.0, 2.0]);
-
+    /// 
     /// let mixed = preamble.try_chain_source(signal)?;
     /// assert_eq!(mixed.collect::<Vec<_>>(), vec![1.0,1.0,2.0,2.0]);
     /// # Ok(())

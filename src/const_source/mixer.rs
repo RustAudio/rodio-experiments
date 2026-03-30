@@ -13,15 +13,15 @@ use std::time::Duration;
 
 use itertools::Itertools;
 
+use crate::ConstSource;
 use crate::common::make_params_mismatch_error;
 use crate::common::mixer::{MixerHandleInner, MixerKey, mixer_next_body};
 use crate::{ChannelCount, SampleRate};
-use crate::ConstSource;
 
 pub struct Mixer<const SR: u32, const CH: u16> {
-    sources: Vec<(Box<dyn ConstSource<SR, CH>>, MixerKey)>,
+    sources: Vec<(Box<dyn ConstSource<SR, CH> + Send + 'static>, MixerKey)>,
     frame_offset: u16,
-    handle: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH>>>>,
+    handle: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH> + Send + 'static>>>,
 }
 
 impl<const SR: u32, const CH: u16> Mixer<SR, CH> {
@@ -61,15 +61,12 @@ impl<const SR: u32, const CH: u16> Iterator for Mixer<SR, CH> {
 
 #[derive(Clone)]
 pub struct MixerHandle<const SR: u32, const CH: u16> {
-    pub(crate) inner: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH>>>>,
+    pub(crate) inner: Arc<MixerHandleInner<Box<dyn ConstSource<SR, CH> + Send + 'static>>>,
 }
 
 impl<const SR: u32, const CH: u16> MixerHandle<SR, CH> {
-    pub fn add(
-        &self,
-        source: impl ConstSource<SR, CH> + 'static,
-    ) -> MixerKey {
-        let source = Box::new(source) as Box<dyn ConstSource<SR, CH>>;
+    pub fn add(&self, source: impl ConstSource<SR, CH> + Send + 'static) -> MixerKey {
+        let source = Box::new(source) as Box<dyn ConstSource<SR, CH> + Send + 'static>;
         self.inner.add_unchecked(source)
     }
 
@@ -86,12 +83,12 @@ impl<const SR: u32, const CH: u16> MixerHandle<SR, CH> {
     }
 }
 
-make_params_mismatch_error! { "mixer", "MixerHandle" } 
+make_params_mismatch_error! { "mixer", "MixerHandle" }
 
 #[cfg(test)]
 mod tests {
-    use crate::const_source::buffer::SamplesBuffer;
     use super::*;
+    use crate::const_source::buffer::SamplesBuffer;
 
     #[test]
     fn add_before_play() {

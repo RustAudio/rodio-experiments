@@ -3,7 +3,6 @@
 /// rid of it when we can use expressions in const parameter positions. Then the
 /// user will no longer need to pass in the output channel count (aka sum things
 /// up in their head).
-
 macro_rules! assert_channel_counts {
     ($ch:ident, $($channels:ident),+) => {
         const { assert!(

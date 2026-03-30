@@ -3,7 +3,6 @@
 /// rid of it when we can use expressions in const parameter positions. Then the
 /// user will no longer need to pass in the output channel count (aka sum things
 /// up in their head).
-
 pub(super) const fn channel_count_mismatch<const OUT: u16, const IN: u16, const N: usize>() -> &'static str {
     use crate::const_source::route_channels::tuple::helpful_compile_time_error::*;
     const MSG_PART_A: &[u8] = b"Wrong output channel count (";
