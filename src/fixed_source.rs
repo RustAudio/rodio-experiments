@@ -97,7 +97,8 @@ pub trait FixedSourceExt: FixedSource {
     /// Tries to convert from a fixed source to a const one assuming
     /// the parameters already match. If they do not this returns an error.
     ///
-    /// If the parameters do not match you can resample using: ``
+    /// If the parameters do not match you can resample using: [with_sample_rate] and
+    /// [with_channel_count].
     fn try_into_const_source<const SR: u32, const CH: u16>(
         self,
     ) -> Result<IntoConstSource<SR, CH, Self>, ParameterMismatch<SR, CH>>
@@ -112,6 +113,17 @@ pub trait FixedSourceExt: FixedSource {
         } else {
             Ok(IntoConstSource(self))
         }
+    }
+
+    /// Use this fixed source as if it's a dynamic source. You generally do not
+    /// want to do this since there are less effects for dynamic sources and
+    /// those that are available can not be implemented as efficient. This is
+    /// therefore purely provided for backwards compatibility.
+    fn into_dynamic_source(self) -> IntoDynamicSource<Self>
+    where
+        Self: Sized,
+    {
+        IntoDynamicSource(self)
     }
 
     #[doc = include_str!("effects/pausable.md")]
@@ -271,7 +283,7 @@ pub trait FixedSourceExt: FixedSource {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let preamble = SamplesBuffer::new(nz!(1), nz!(1), [1.0, 1.0]);
     /// let signal = SamplesBuffer::new(nz!(1), nz!(1), [2.0, 2.0]);
-    /// 
+    ///
     /// let mixed = preamble.try_chain_source(signal)?;
     /// assert_eq!(mixed.collect::<Vec<_>>(), vec![1.0,1.0,2.0,2.0]);
     /// # Ok(())
@@ -302,6 +314,34 @@ impl<const SR: u32, const CH: u16, S: FixedSource> ConstSource<SR, CH>
 
 impl<const SR: u32, const CH: u16, S: FixedSource> Iterator for IntoConstSource<SR, CH, S> {
     type Item = Sample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+pub struct IntoDynamicSource<S: FixedSource>(S);
+
+impl<S: FixedSource> crate::DynamicSource for IntoDynamicSource<S> {
+    fn current_span_len(&self) -> Option<usize> {
+        None
+    }
+
+    fn channels(&self) -> ChannelCount {
+        self.0.channels()
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        self.0.sample_rate()
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        self.0.total_duration()
+    }
+}
+
+impl<S: FixedSource> Iterator for IntoDynamicSource<S> {
+    type Item = crate::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
