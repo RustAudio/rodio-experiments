@@ -1,1 +1,0 @@
-Fades in the sound.

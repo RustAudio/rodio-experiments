@@ -13,10 +13,6 @@ use crate::effects::fixed_source::ChannelVolume;
 use crate::effects::fixed_source::Distortion;
 use crate::effects::fixed_source::Dither;
 use crate::effects::fixed_source::Fade;
-use crate::effects::fixed_source::FadeIn;
-use crate::effects::fixed_source::FadeOut;
-use crate::effects::fixed_source::FadeOutAfter;
-use crate::effects::fixed_source::LinearGainRamp;
 use crate::effects::fixed_source::TrackPosition;
 
 use crate::ConstSource;
@@ -225,49 +221,11 @@ pub trait FixedSourceExt: FixedSource {
         BltFilter::new(self, BltFormula::HighPass { freq, bandwidth })
     }
 
-    #[doc = include_str!("effects/fade_in.md")]
-    fn fade_in(self, duration: Duration) -> FadeIn<Self>
-    where
-        Self: Sized,
-    {
-        FadeIn::new(self, duration)
-    }
-
-    #[doc = include_str!("effects/fade_out.md")]
-    fn fade_out(self, duration: Duration) -> FadeOut<Self>
-    where
-        Self: Sized,
-    {
-        FadeOut::new(self, duration)
-    }
-
-    #[doc = include_str!("effects/fade_out_after.md")]
-    fn fade_out_after(self, start_after: Duration, fade_duration: Duration) -> FadeOutAfter<Self>
-    where
-        Self: Sized,
-    {
-        FadeOutAfter::new(self, start_after, fade_duration)
-    }
-
     fn fade<E: IntoEnvelope>(self, envelope: E) -> Fade<Self, E::Envelope>
     where
         Self: Sized,
     {
         Fade::new(self, envelope)
-    }
-
-    #[doc = include_str!("effects/linear_gain_ramp.md")]
-    fn linear_gain_ramp(
-        self,
-        duration: Duration,
-        start_value: Float,
-        end_value: Float,
-        clamp_end: bool,
-    ) -> LinearGainRamp<Self>
-    where
-        Self: Sized,
-    {
-        LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
     }
 
     #[doc = include_str!("effects/distortion.md")]

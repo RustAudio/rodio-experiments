@@ -15,10 +15,6 @@ use crate::effects::const_source::ChannelVolume;
 use crate::effects::const_source::Distortion;
 use crate::effects::const_source::Dither;
 use crate::effects::const_source::Fade;
-use crate::effects::const_source::FadeIn;
-use crate::effects::const_source::FadeOut;
-use crate::effects::const_source::FadeOutAfter;
-use crate::effects::const_source::LinearGainRamp;
 use crate::effects::const_source::TrackPosition;
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
@@ -223,53 +219,12 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     {
         BltFilter::new(self, BltFormula::HighPass { freq, bandwidth })
     }
-    #[doc = include_str!("effects/fade_in.md")]
-    fn fade_in(self, duration: Duration) -> FadeIn<SR, CH, Self>
-    where
-        Self: Sized,
-    {
-        FadeIn::new(self, duration)
-    }
-
-    #[doc = include_str!("effects/fade_out.md")]
-    fn fade_out(self, duration: Duration) -> FadeOut<SR, CH, Self>
-    where
-        Self: Sized,
-    {
-        FadeOut::new(self, duration)
-    }
-
-    #[doc = include_str!("effects/fade_out_after.md")]
-    fn fade_out_after(
-        self,
-        start_after: Duration,
-        fade_duration: Duration,
-    ) -> FadeOutAfter<SR, CH, Self>
-    where
-        Self: Sized,
-    {
-        FadeOutAfter::new(self, start_after, fade_duration)
-    }
 
     fn fade<E: IntoEnvelope>(self, envelope: E) -> Fade<SR, CH, Self, E::Envelope>
     where
         Self: Sized,
     {
         Fade::new(self, envelope)
-    }
-
-    #[doc = include_str!("effects/linear_gain_ramp.md")]
-    fn linear_gain_ramp(
-        self,
-        duration: Duration,
-        start_value: Float,
-        end_value: Float,
-        clamp_end: bool,
-    ) -> LinearGainRamp<SR, CH, Self>
-    where
-        Self: Sized,
-    {
-        LinearGainRamp::new(self, duration, start_value, end_value, clamp_end)
     }
 
     #[doc = include_str!("effects/distortion.md")]
