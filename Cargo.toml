@@ -9,7 +9,7 @@ rubato = "1.0.0"
 audioadapter = "2.0"
 audioadapter-buffers = "2.0"
 itertools = "0.14.0"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 rand = "0.10.0"
 rand_distr = "0.6.0"
 dasp_sample = "0.11.0"
@@ -18,6 +18,7 @@ roots = "0.0.8"
 [dev-dependencies]
 spectrum-analyzer = "1.7.0"
 divan = "0.1.21"
+clap = { version = "4.6.0", features = ["derive"] }
 
 [features]
 64bit = []
