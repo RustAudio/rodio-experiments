@@ -47,7 +47,6 @@ impl<S: FixedSource> Resampler<S> {
 
         let output_delay = this.resampler.output_delay();
         let output_delay = output_delay * this.inner_mut().channels().get() as usize;
-        dbg!(&output_delay);
         let _ = this.by_ref().take(output_delay).count();
         this
     }
@@ -75,7 +74,7 @@ impl<S: FixedSource> Resampler<S> {
         let mut input_padding = 0;
         if self.input_buffer.is_empty() {
             return None;
-        } else if dbg!(self.input_buffer.len()) < dbg!(needed_samples) {
+        } else if self.input_buffer.len() < needed_samples {
             input_padding = needed_samples - self.input_buffer.len();
             self.input_buffer.resize(needed_samples, 0.0);
         };
