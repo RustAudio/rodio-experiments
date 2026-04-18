@@ -24,7 +24,7 @@ impl<const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_I
         self.sources
             .iter()
             .filter_map(ConstSource::total_duration)
-            .reduce(Ord::max)
+            .reduce(Ord::min)
     }
 }
 

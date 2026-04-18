@@ -25,7 +25,7 @@ impl<const N: usize, S: FixedSource> FixedSource for ChannelCombiningArray<N, S>
         self.sources
             .iter()
             .filter_map(FixedSource::total_duration)
-            .reduce(Ord::max)
+            .reduce(Ord::min)
     }
 
     fn channels(&self) -> rodio::ChannelCount {

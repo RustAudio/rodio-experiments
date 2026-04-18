@@ -59,3 +59,5 @@ pub fn verify_params_and_determine_channel_count<S: FixedSource>(
         Ok(channels)
     }
 }
+
+// pub fn verify_params_and_determine_channel_count_for_tuple<S: FixedSource>(

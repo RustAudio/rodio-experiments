@@ -83,6 +83,7 @@ pub(crate) use assert_error_traits;
 #[allow(dead_code)]
 pub(crate) const fn use_required_traits<T: Send + Sync + 'static + Display + Debug + Clone>() {}
 
+// Note: if you change this you also need to change the tuple impl!!
 macro_rules! mixed_next_body {
     ($self:ident) => {
         let (sum, summed) = $self
@@ -97,6 +98,7 @@ macro_rules! mixed_next_body {
 }
 pub(crate) use mixed_next_body;
 
+// Note: if you change this you also need to change the tuple impl!!
 macro_rules! queued_next_body {
     ($self:ident) => {
         loop {
@@ -109,6 +111,7 @@ macro_rules! queued_next_body {
 }
 pub(crate) use queued_next_body;
 
+// Note: if you change this you also need to change the tuple impl!!
 macro_rules! channel_combined_next_body {
     ($self:ident) => {
         let channels = $self.channels().get();

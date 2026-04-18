@@ -25,7 +25,7 @@ impl<S: FixedSource> FixedSource for ChannelCombiningVec<S> {
         self.sources
             .iter()
             .filter_map(FixedSource::total_duration)
-            .reduce(Ord::max)
+            .reduce(Ord::min)
     }
 
     fn channels(&self) -> rodio::ChannelCount {

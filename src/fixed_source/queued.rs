@@ -11,8 +11,8 @@ pub trait IntoQueued {
     type TryQueuedSource: FixedSource;
     type IntoQueuedSource: FixedSource;
 
-    fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch>;
-    fn into_list_converted(
+    fn try_into_queued(self) -> Result<Self::TryQueuedSource, ParamsMismatch>;
+    fn into_queued_converted(
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,

@@ -42,14 +42,14 @@ impl<S: FixedSource> super::IntoQueued for Vec<S> {
     type TryQueuedSource = QueuedVec<S>;
     type IntoQueuedSource = QueuedVec<MaybeConvert<S>>;
 
-    fn try_into_list(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
+    fn try_into_queued(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
         check_params_for_list! {self}
         Ok(Self::TryQueuedSource {
             sources: self,
             current: 0,
         })
     }
-    fn into_list_converted(
+    fn into_queued_converted(
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,

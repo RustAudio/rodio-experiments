@@ -1,129 +1,82 @@
+use std::time::Duration;
+
+use itertools::Itertools;
+
 use crate::FixedSource;
 use crate::{ChannelCount, SampleRate};
 
-use super::super::MaybeConvert;
-use super::super::convert_if_needed;
 use super::{IntoMixed, ParamsMismatch};
-use crate::common::for_in_tuple;
 
-macro_rules! tuple_impl {
-    ($list:ident; $($generics:ident),+; $($count:tt),*) => {
-        #[derive(Clone, Debug)]
-        pub struct $list<$($generics),+> {
-            sources: ($($generics),+),
-        }
+use crate::fixed_source::tuple_access::{ConvertedTuple, TupleSourceAccess};
 
-        impl<$($generics: FixedSource),+> Iterator for $list<$($generics),+> {
-            type Item = crate::Sample;
-
-            fn next(&mut self) -> Option<Self::Item> {
-                let mut summed = 0u8;
-                let mut sum = None;
-                for_in_tuple! { $($count),*;
-                    for mut item in self.sources; {
-                        let sample = item.next().map(|s| s as f64);
-                        summed += sample.is_some() as u8;
-                        sum = match [sum, sample] {
-                            [Some(sum), None] => Some(sum),
-                            [Some(sum), Some(sample)] => Some(sum + sample),
-                            [None, Some(sample)] => Some(sample),
-                            [None, None] => None,
-                        };
-                    } // for every item body
-                }
-
-                sum.map(|sum| sum / summed as f64).map(|sum| sum as f32)
-            } // next
-        } // impl iter
-
-        impl<$($generics: FixedSource),+> FixedSource for $list<$($generics),+> {
-            fn channels(&self) -> rodio::ChannelCount {
-                self.sources.0.channels()
-            }
-
-            fn sample_rate(&self) -> rodio::SampleRate {
-                self.sources.0.sample_rate()
-            }
-
-            fn total_duration(&self) -> Option<std::time::Duration> {
-                let mut max = None;
-                for_in_tuple! { $($count),*;
-                    for item in self.sources; {
-                        let dur= item.total_duration();
-                        max = match [max, dur] {
-                            [Some(max), None] => Some(max),
-                            [Some(max), Some(dur)] => Some(max.max(dur)),
-                            [None, Some(dur)] => Some(dur),
-                            [None, None] => None,
-                        };
-                    }
-                }
-                max
-            }
-        } // impl FixedSource
-
-        impl<$($generics: FixedSource),+> IntoMixed for ($($generics),+) {
-            type TryMixedSource = $list<$($generics),+>;
-            type IntoMixedSource = $list<$(MaybeConvert<$generics>),+>;
-
-            fn try_into_mixed(self) -> Result<Self::TryMixedSource, ParamsMismatch> {
-                #![expect(unused, reason = "index += 1 is not used in the last iteration")]
-
-                let left = (self.0.sample_rate(), self.0.channels());
-                let mut index = 0;
-
-                for_in_tuple! { $($count),*;
-                    for source in self; {
-                        let right = (source.sample_rate(), source.channels());
-                        if left != right {
-                            return Err(ParamsMismatch {
-                                index_of_first_mismatch: index as usize,
-                                sample_rate_left: left.0,
-                                channel_count_left: left.1,
-                                sample_rate_right: right.0,
-                                channel_count_right: right.1,
-                            });
-                        }
-                        index += 1;
-                    }
-                }
-
-                Ok($list {
-                    sources: self,
-                })
-            }
-
-            fn into_mixed_converted(
-                self,
-                sample_rate: SampleRate,
-                channels: ChannelCount,
-            ) -> Self::IntoMixedSource{
-
-                let sources = (
-                $(
-                    convert_if_needed(self.$count, sample_rate, channels)
-                ),+
-                );
-
-                $list {
-                    sources,
-                }
-            }
-        } // impl IntoList
-    }; // transcriber
+pub struct TupleMixer<T> {
+    inner: T,
 }
 
-tuple_impl! {Mixed2Tuple; S1,S2; 0,1}
-tuple_impl! {Mixed3Tuple; S1,S2,S3; 0,1,2}
-tuple_impl! {Mixed4Tuple; S1,S2,S3,S4; 0,1,2,3}
-tuple_impl! {Mixed5Tuple; S1,S2,S3,S4,S5; 0,1,2,3,4}
-tuple_impl! {Mixed6Tuple; S1,S2,S3,S4,S5,S6; 0,1,2,3,4,5}
-tuple_impl! {Mixed7Tuple; S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5,6}
-tuple_impl! {Mixed8Tuple; S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6,7}
-tuple_impl! {Mixed9Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7,8}
-tuple_impl! {Mixed10Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8,9}
-tuple_impl! {Mixed11Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9,10}
-tuple_impl! {Mixed12Tuple; S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10,11}
+impl<T: TupleSourceAccess> FixedSource for TupleMixer<T> {
+    fn channels(&self) -> ChannelCount {
+        self.inner.channels(0)
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        self.inner.sample_rate(0)
+    }
+
+    fn total_duration(&self) -> Option<std::time::Duration> {
+        (0..T::LEN)
+            .into_iter()
+            .map(|idx| self.inner.total_duration(idx))
+            .fold_options(Duration::ZERO, |max, dur| max.max(dur))
+    }
+}
+
+impl<T: TupleSourceAccess> Iterator for TupleMixer<T> {
+    type Item = crate::Sample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (sum, summed) = (0..T::LEN)
+            .into_iter()
+            .filter_map(|idx| self.inner.next(idx))
+            .map(|sample| sample as f64)
+            .zip((1usize..).into_iter())
+            .reduce(|(sum, _), (sample, summed)| (sum + sample, summed))?;
+        Some((sum / summed as f64) as crate::Float)
+    }
+}
+
+impl<T: TupleSourceAccess + ConvertedTuple> IntoMixed for T {
+    type TryMixedSource = TupleMixer<T>; // TODO how do we resolve this?
+    type IntoMixedSource = TupleMixer<T::Converted>;
+
+    fn try_into_mixed(self) -> Result<Self::TryMixedSource, ParamsMismatch> {
+        let left = (self.sample_rate(0), self.channels(0));
+
+        for i in 0..T::LEN {
+            let right = (self.sample_rate(i), self.channels(i));
+            if left != right {
+                return Err(ParamsMismatch {
+                    index_of_first_mismatch: i,
+                    sample_rate_left: left.0,
+                    channel_count_left: left.1,
+                    sample_rate_right: right.0,
+                    channel_count_right: right.1,
+                });
+            }
+        }
+
+        Ok(TupleMixer { inner: self })
+    }
+
+    fn into_mixed_converted(
+        self,
+        sample_rate: SampleRate,
+        channels: ChannelCount,
+    ) -> Self::IntoMixedSource {
+        TupleMixer {
+            inner: self.mapped(sample_rate, channels),
+        }
+    }
+}
 
 #[cfg(test)]
 pub(crate) mod tests {
