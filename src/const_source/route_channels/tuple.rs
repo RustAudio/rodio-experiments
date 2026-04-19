@@ -88,25 +88,25 @@ macro_rules! tuple_impl {
     }; // transcriber
 }
 
-tuple_impl! {CH2T; ChannelCombiner2Tuple; CH1,CH2; S1,S2; 0,1}
-tuple_impl! {CH3T; ChannelCombiner3Tuple; CH1,CH2,CH3; S1,S2,S3; 0,1,2}
-tuple_impl! {CH4T; ChannelCombiner4Tuple; CH1,CH2,CH3,CH4; S1,S2,S3,S4; 0,1,2,3}
-tuple_impl! {CH5T; ChannelCombiner5Tuple; CH1,CH2,CH3,CH4,CH5; S1,S2,S3,S4,S5; 0,1,2,3,4}
-tuple_impl! {CH6T; ChannelCombiner6Tuple; CH1,CH2,CH3,CH4,CH5,CH6;
+tuple_impl! {CH2T; CombinedChannels2Tuple; CH1,CH2; S1,S2; 0,1}
+tuple_impl! {CH3T; CombinedChannels3Tuple; CH1,CH2,CH3; S1,S2,S3; 0,1,2}
+tuple_impl! {CH4T; CombinedChannels4Tuple; CH1,CH2,CH3,CH4; S1,S2,S3,S4; 0,1,2,3}
+tuple_impl! {CH5T; CombinedChannels5Tuple; CH1,CH2,CH3,CH4,CH5; S1,S2,S3,S4,S5; 0,1,2,3,4}
+tuple_impl! {CH6T; CombinedChannels6Tuple; CH1,CH2,CH3,CH4,CH5,CH6;
 S1,S2,S3,S4,S5,S6; 0,1,2,3,4,5}
-tuple_impl! {CH7T; ChannelCombiner7Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7;
+tuple_impl! {CH7T; CombinedChannels7Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7;
 S1,S2,S3,S4,S5,S6,S7; 0,1,2,3,4,5,6}
-tuple_impl! {CH8T; ChannelCombiner8Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8;
+tuple_impl! {CH8T; CombinedChannels8Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8;
 S1,S2,S3,S4,S5,S6,S7,S8; 0,1,2,3,4,5,6,7}
-tuple_impl! {CH9T; ChannelCombiner9Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8,CH9;
+tuple_impl! {CH9T; CombinedChannels9Tuple; CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8,CH9;
 S1,S2,S3,S4,S5,S6,S7,S8,S9; 0,1,2,3,4,5,6,7,8}
-tuple_impl! {CH10T; ChannelCombiner10Tuple;
+tuple_impl! {CH10T; CombinedChannels10Tuple;
 CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8,CH9,CH10;
 S1,S2,S3,S4,S5,S6,S7,S8,S9,S10; 0,1,2,3,4,5,6,7,8,9}
-tuple_impl! {CH11T; ChannelCombiner11Tuple;
+tuple_impl! {CH11T; CombinedChannels11Tuple;
 CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8,CH9,CH10,CH11;
 S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11; 0,1,2,3,4,5,6,7,8,9,10}
-tuple_impl! {CH12T; ChannelCombiner12Tuple;
+tuple_impl! {CH12T; CombinedChannels12Tuple;
 CH1,CH2,CH3,CH4,CH5,CH6,CH7,CH8,CH9,CH10,CH11,CH12;
 S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12; 0,1,2,3,4,5,6,7,8,9,10,11}
 

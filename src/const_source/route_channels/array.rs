@@ -5,7 +5,7 @@ use crate::const_source::route_channels::CombineChannels;
 mod helpful_compile_time_error;
 
 #[derive(Clone, Debug)]
-pub struct ChannelCombiningArray<
+pub struct CombinedChannelsArray<
     const N: usize,
     const SR: u32,
     const CH_IN: u16,
@@ -17,7 +17,7 @@ pub struct ChannelCombiningArray<
 }
 
 impl<const N: usize, const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_IN>>
-    Iterator for ChannelCombiningArray<N, SR, CH_IN, CH_OUT, S>
+    Iterator for CombinedChannelsArray<N, SR, CH_IN, CH_OUT, S>
 {
     type Item = crate::Sample;
     fn next(&mut self) -> Option<Self::Item> {
@@ -26,7 +26,7 @@ impl<const N: usize, const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: Cons
 }
 
 impl<const N: usize, const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: ConstSource<SR, CH_IN>>
-    ConstSource<SR, CH_OUT> for ChannelCombiningArray<N, SR, CH_IN, CH_OUT, S>
+    ConstSource<SR, CH_OUT> for CombinedChannelsArray<N, SR, CH_IN, CH_OUT, S>
 {
     fn total_duration(&self) -> Option<std::time::Duration> {
         self.sources
@@ -39,7 +39,7 @@ impl<const N: usize, const SR: u32, const CH_IN: u16, const CH_OUT: u16, S: Cons
 impl<const N: usize, const SR: u32, const CH_IN: u16, S: ConstSource<SR, CH_IN>>
     CombineChannels<SR, CH_IN> for [S; N]
 {
-    type CombinerSource<const CH: u16> = ChannelCombiningArray<N, SR, CH_IN, CH, S>;
+    type CombinerSource<const CH: u16> = CombinedChannelsArray<N, SR, CH_IN, CH, S>;
     type Result<T> = T;
 
     fn combine_channels<const CH: u16>(self) -> Self::Result<Self::CombinerSource<CH>> {

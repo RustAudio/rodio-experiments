@@ -10,13 +10,13 @@ use crate::fixed_source::list_of_sources::ListOfSources;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct ChannelCombining<T> {
+pub struct CombinedChannels<T> {
     inner: T,
     channels: ChannelCount,
     current: u16,
 }
 
-impl<T: ListOfSources> FixedSource for ChannelCombining<T> {
+impl<T: ListOfSources> FixedSource for CombinedChannels<T> {
     fn channels(&self) -> ChannelCount {
         self.channels
     }
@@ -33,7 +33,7 @@ impl<T: ListOfSources> FixedSource for ChannelCombining<T> {
     }
 }
 
-impl<T: ListOfSources> Iterator for ChannelCombining<T> {
+impl<T: ListOfSources> Iterator for CombinedChannels<T> {
     type Item = crate::Sample;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -52,16 +52,17 @@ impl<T: ListOfSources> Iterator for ChannelCombining<T> {
     }
 }
 
-pub trait CombineChannels: Sized {
-    type TryCombinerSource: FixedSource;
-
-    fn try_combine_channels(self) -> Result<Self::TryCombinerSource, CombineChannelsError>;
+pub trait CombineChannels {
+    fn try_combine_channels(self) -> Result<CombinedChannels<Self>, CombineChannelsError>
+    where
+        Self: ListOfSources + Sized;
 }
 
-impl<T: ListOfSources> CombineChannels for T {
-    type TryCombinerSource = ChannelCombining<T>;
-
-    fn try_combine_channels(self) -> Result<Self::TryCombinerSource, CombineChannelsError> {
+impl<T> CombineChannels for T {
+    fn try_combine_channels(self) -> Result<CombinedChannels<Self>, CombineChannelsError>
+    where
+        Self: ListOfSources + Sized,
+    {
         let sources: &T = &self;
         let channels = (0..sources.len())
             .map(|i| sources.channels(i).get() as u32)
@@ -82,7 +83,7 @@ impl<T: ListOfSources> CombineChannels for T {
             });
         }
 
-        Ok(Self::TryCombinerSource {
+        Ok(CombinedChannels {
             channels,
             inner: self,
             current: 0,

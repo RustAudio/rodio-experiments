@@ -5,7 +5,7 @@ use itertools::Itertools;
 use crate::FixedSource;
 use crate::{ChannelCount, SampleRate};
 
-use crate::fixed_source::list_of_sources::{ConvertedListOfSources, ListOfSources};
+use crate::fixed_source::list_of_sources::{ConvertibleListOfSources, ListOfSources};
 
 pub struct Mixed<T> {
     inner: T,
@@ -43,22 +43,23 @@ impl<T: ListOfSources> Iterator for Mixed<T> {
 }
 
 pub trait IntoMixed {
-    type TryMixedSource: FixedSource;
-    type IntoMixedSource: FixedSource;
-
-    fn try_into_mixed(self) -> Result<Self::TryMixedSource, ParamsMismatch>;
+    fn try_into_mixed(self) -> Result<Mixed<Self>, ParamsMismatch>
+    where
+        Self: ListOfSources + Sized;
     fn into_mixed_converted(
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoMixedSource;
+    ) -> Mixed<Self::Converted>
+    where
+        Self: ListOfSources + ConvertibleListOfSources + Sized;
 }
 
-impl<T: ListOfSources + ConvertedListOfSources> IntoMixed for T {
-    type TryMixedSource = Mixed<T>;
-    type IntoMixedSource = Mixed<T::Converted>;
-
-    fn try_into_mixed(self) -> Result<Self::TryMixedSource, ParamsMismatch> {
+impl<T> IntoMixed for T {
+    fn try_into_mixed(self) -> Result<Mixed<Self>, ParamsMismatch>
+    where
+        Self: ListOfSources + Sized,
+    {
         let left = (self.sample_rate(0), self.channels(0));
 
         for i in 0..self.len() {
@@ -81,7 +82,10 @@ impl<T: ListOfSources + ConvertedListOfSources> IntoMixed for T {
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoMixedSource {
+    ) -> Mixed<<Self as ConvertibleListOfSources>::Converted>
+    where
+        Self: ListOfSources + ConvertibleListOfSources + Sized,
+    {
         Mixed {
             inner: self.converted(sample_rate, channels),
         }

@@ -4,7 +4,7 @@ use std::time::Duration;
 use itertools::Itertools;
 
 use crate::FixedSource;
-use crate::fixed_source::list_of_sources::{ConvertedListOfSources, ListOfSources};
+use crate::fixed_source::list_of_sources::{ConvertibleListOfSources, ListOfSources};
 use crate::{ChannelCount, SampleRate};
 
 #[derive(Debug)]
@@ -52,22 +52,23 @@ impl<T: ListOfSources> Iterator for Queued<T> {
 }
 
 pub trait IntoQueued {
-    type TryQueuedSource: FixedSource;
-    type IntoQueuedSource: FixedSource;
-
-    fn try_into_queued(self) -> Result<Self::TryQueuedSource, ParamsMismatch>;
+    fn try_into_queued(self) -> Result<Queued<Self>, ParamsMismatch>
+    where
+        Self: ListOfSources + Sized;
     fn into_queued_converted(
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoQueuedSource;
+    ) -> Queued<Self::Converted>
+    where
+        Self: ListOfSources + ConvertibleListOfSources + Sized;
 }
 
-impl<T: ListOfSources + ConvertedListOfSources> IntoQueued for T {
-    type TryQueuedSource = Queued<T>; // TODO how do we resolve this?
-    type IntoQueuedSource = Queued<T::Converted>;
-
-    fn try_into_queued(self) -> Result<Self::TryQueuedSource, ParamsMismatch> {
+impl<T> IntoQueued for T {
+    fn try_into_queued(self) -> Result<Queued<Self>, ParamsMismatch>
+    where
+        Self: ListOfSources + Sized,
+    {
         let left = (self.sample_rate(0), self.channels(0));
 
         for i in 0..self.len() {
@@ -93,7 +94,10 @@ impl<T: ListOfSources + ConvertedListOfSources> IntoQueued for T {
         self,
         sample_rate: SampleRate,
         channels: ChannelCount,
-    ) -> Self::IntoQueuedSource {
+    ) -> Queued<<Self as ConvertibleListOfSources>::Converted>
+    where
+        Self: ListOfSources + ConvertibleListOfSources + Sized,
+    {
         Queued {
             inner: self.converted(sample_rate, channels),
             current: 0,

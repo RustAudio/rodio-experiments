@@ -31,6 +31,8 @@ pub mod queue;
 pub mod queued;
 pub mod route_channels;
 
+mod list_of_sources;
+
 mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};
 

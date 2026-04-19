@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use crate::FixedSource;
+use crate::ConstSource;
 
-use crate::fixed_source::{MaybeConvert, convert_if_needed};
 use crate::{ChannelCount, SampleRate};
 
-pub trait ListOfSources {
+pub trait ListOfSources<const SR: u32, const CH: u16> {
     /// number of sources in the "list"
     fn len(&self) -> usize;
 
@@ -16,7 +15,9 @@ pub trait ListOfSources {
     fn sample_rate(&self, idx: usize) -> SampleRate;
 }
 
-impl<const N: usize, S: FixedSource> ListOfSources for [S; N] {
+impl<const N: usize, const SR: u32, const CH: u16, S: ConstSource<SR, CH>> ListOfSources<SR, CH>
+    for [S; N]
+{
     fn len(&self) -> usize {
         N
     }
@@ -38,7 +39,7 @@ impl<const N: usize, S: FixedSource> ListOfSources for [S; N] {
     }
 }
 
-impl<S: FixedSource> ListOfSources for Vec<S> {
+impl<const SR: u32, const CH: u16, S: ConstSource<SR, CH>> ListOfSources<SR, CH> for Vec<S> {
     fn len(&self) -> usize {
         self.len()
     }
@@ -60,32 +61,13 @@ impl<S: FixedSource> ListOfSources for Vec<S> {
     }
 }
 
-pub trait ConvertibleListOfSources {
-    type Converted: ListOfSources;
-    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted;
-}
-
-impl<const N: usize, S: FixedSource> ConvertibleListOfSources for [S; N] {
-    type Converted = [MaybeConvert<S>; N];
-    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted {
-        self.map(|source| convert_if_needed(source, sample_rate, channels))
-    }
-}
-
-impl<S: FixedSource> ConvertibleListOfSources for Vec<S> {
-    type Converted = Vec<MaybeConvert<S>>;
-    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted {
-        self.into_iter()
-            .map(|source| convert_if_needed(source, sample_rate, channels))
-            .collect()
-    }
-}
-
 macro_rules! tuple_impl {
     ($len:literal; $($generics:ident),+; $($count:tt),*) => {
-        impl<$($generics),+> ListOfSources for ($($generics),+)
+
+        impl<const SR: u32, const CH: u16, $($generics),+> ListOfSources<SR, CH>
+            for ($($generics),+)
         where
-            $($generics: crate::FixedSource),+
+            $($generics: crate::ConstSource<SR, CH>),+
         {
             fn len(&self) -> usize {
                 $len
@@ -119,31 +101,6 @@ macro_rules! tuple_impl {
                 }
             }
         } // impl trait
-
-        impl<$($generics),+> ConvertibleListOfSources for ($($generics),+)
-        where
-            $($generics: crate::FixedSource),+
-        {
-            type Converted = ( $( crate::fixed_source::MaybeConvert<$generics>),+ );
-
-            fn converted(
-                self,
-                sample_rate: SampleRate,
-                channels: ChannelCount,
-            ) -> Self::Converted {
-                (
-                    $(
-                        crate::fixed_source::convert_if_needed(
-                            self.$count,
-                            sample_rate,
-                            channels
-                        ),
-                    )+
-                )
-            }
-        }
-
-
     } // transcriber
 } // macro rules
 
