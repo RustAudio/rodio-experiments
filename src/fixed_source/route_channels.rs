@@ -5,10 +5,90 @@ use itertools::Itertools;
 use crate::ChannelCount;
 use crate::FixedSource;
 use crate::SampleRate;
+use crate::fixed_source::list_of_sources::ListOfSources;
 
-mod array;
-mod tuple;
-mod vec;
+use std::time::Duration;
+
+#[derive(Debug)]
+pub struct ChannelCombining<T> {
+    inner: T,
+    channels: ChannelCount,
+    current: u16,
+}
+
+impl<T: ListOfSources> FixedSource for ChannelCombining<T> {
+    fn channels(&self) -> ChannelCount {
+        self.channels
+    }
+
+    fn sample_rate(&self) -> SampleRate {
+        self.inner.sample_rate(0)
+    }
+
+    fn total_duration(&self) -> Option<std::time::Duration> {
+        (0..self.inner.len())
+            .into_iter()
+            .map(|idx| self.inner.total_duration(idx))
+            .fold_options(Duration::ZERO, |sum, dur| sum + dur)
+    }
+}
+
+impl<T: ListOfSources> Iterator for ChannelCombining<T> {
+    type Item = crate::Sample;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let channels = self.channels().get();
+        let mut channel = 0;
+        for i in 0..self.inner.len() {
+            if (channel..(channel + self.inner.channels(i).get())).contains(&self.current) {
+                self.current += 1;
+                self.current %= channels;
+                return self.inner.next(i);
+            } else {
+                channel += self.inner.channels(i).get()
+            }
+        }
+        None
+    }
+}
+
+pub trait CombineChannels: Sized {
+    type TryCombinerSource: FixedSource;
+
+    fn try_combine_channels(self) -> Result<Self::TryCombinerSource, CombineChannelsError>;
+}
+
+impl<T: ListOfSources> CombineChannels for T {
+    type TryCombinerSource = ChannelCombining<T>;
+
+    fn try_combine_channels(self) -> Result<Self::TryCombinerSource, CombineChannelsError> {
+        let sources: &T = &self;
+        let channels = (0..sources.len())
+            .map(|i| sources.channels(i).get() as u32)
+            .sum::<u32>();
+        let channels: u16 = channels
+            .try_into()
+            .map_err(|_| CombineChannelsError::TooManyChannels(channels))?;
+        let channels = NonZeroU16::new(channels).expect("Sum of NonZero items can not be zero");
+
+        let mut rates = (0..sources.len()).map(|i| sources.sample_rate(i));
+        let first = rates.next().ok_or(CombineChannelsError::Empty)?;
+
+        if let Some((pos, sample_rate_right)) = rates.find_position(|sr| *sr != first) {
+            return Err(CombineChannelsError::SampleRateMismatch {
+                index_of_first_mismatch: pos,
+                sample_rate_left: first,
+                sample_rate_right,
+            });
+        }
+
+        Ok(Self::TryCombinerSource {
+            channels,
+            inner: self,
+            current: 0,
+        })
+    }
+}
 
 #[derive(thiserror::Error, Debug, Clone)]
 pub enum CombineChannelsError {
@@ -25,39 +105,80 @@ pub enum CombineChannelsError {
     Empty,
 }
 
-pub trait CombineChannels: Sized {
-    type TryCombinerSource: FixedSource;
+#[cfg(test)]
+pub(crate) mod tests {
+    use itertools::Itertools;
 
-    fn try_combine_channels(self) -> Result<Self::TryCombinerSource, CombineChannelsError>;
-}
+    use crate::fixed_source::buffer::SamplesBuffer;
+    use crate::nz;
 
-pub fn verify_params_and_determine_channel_count<S: FixedSource>(
-    sources: &[S],
-) -> Result<ChannelCount, CombineChannelsError> {
-    let channels = sources
-        .iter()
-        .map(FixedSource::channels)
-        .map(|c| c.get() as u32)
-        .sum::<u32>();
-    let channels: u16 = channels
-        .try_into()
-        .map_err(|_| CombineChannelsError::TooManyChannels(channels))?;
-    let channels = NonZeroU16::new(channels).expect("Sum of NonZero items can not be zero");
+    use super::*;
 
-    let mut list = sources.iter().map(FixedSource::sample_rate);
-    let Some(first) = list.next() else {
-        return Err(CombineChannelsError::Empty);
-    };
+    #[test]
+    fn combined2() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(1), vec![1.0, 2.0, 3.0]);
+        let s2 = SamplesBuffer::new(nz!(1), nz!(1), vec![4.0, 5.0, 6.0]);
 
-    if let Some((pos, sample_rate_right)) = list.find_position(|sr| *sr != first) {
-        Err(CombineChannelsError::SampleRateMismatch {
-            index_of_first_mismatch: pos,
-            sample_rate_left: first,
-            sample_rate_right,
-        })
-    } else {
-        Ok(channels)
+        assert_eq!(
+            vec![1., 4., 2., 5., 3., 6.],
+            (s1, s2).try_combine_channels().unwrap().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn combined3() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(1), vec![1.0]);
+        let s2 = SamplesBuffer::new(nz!(2), nz!(1), vec![2.0, 3.0]);
+        let s3 = SamplesBuffer::new(nz!(1), nz!(1), vec![4.0]);
+
+        assert_eq!(
+            vec![1., 2., 3., 4.],
+            (s1, s2, s3)
+                .try_combine_channels()
+                .unwrap()
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn combined3_mismatch() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(1), vec![1.0]);
+        let s2 = SamplesBuffer::new(nz!(2), nz!(2), vec![2.0]);
+        let s3 = SamplesBuffer::new(nz!(1), nz!(1), vec![3.0]);
+
+        assert!((s1, s2, s3).try_combine_channels().is_err());
+    }
+
+    #[test]
+    fn five_channel_audio_samples_in_correct_order() {
+        let s1 = SamplesBuffer::new(nz!(2), nz!(44100), vec![1.0, 2.0, 1.0, 2.0]);
+        let s2 = SamplesBuffer::new(nz!(1), nz!(44100), vec![3.0; 2]);
+        let s3 = SamplesBuffer::new(nz!(2), nz!(44100), vec![4.0, 5.0, 4.0, 5.0]);
+
+        let combined = (s1, s2, s3).try_combine_channels().unwrap();
+        assert_eq!(combined.channels(), nz!(5));
+        assert_eq!(
+            combined.collect_vec(),
+            vec![1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+        )
+    }
+
+    #[test]
+    fn combine_array() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(44100), vec![1.0, 3.0]);
+        let s2 = SamplesBuffer::new(nz!(1), nz!(44100), vec![2.0, 4.0, 5.0, 6.0]);
+
+        assert_eq!(
+            vec![1.0, 2.0, 3.0, 4.0],
+            [s1, s2].try_combine_channels().unwrap().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn refuse_mismatch() {
+        let s1 = SamplesBuffer::new(nz!(1), nz!(48000), vec![1.0, 3.0]);
+        let s2 = SamplesBuffer::new(nz!(1), nz!(44100), vec![2.0, 4.0, 5.0, 6.0]);
+
+        assert!([s1, s2].try_combine_channels().is_err());
     }
 }
-
-// pub fn verify_params_and_determine_channel_count_for_tuple<S: FixedSource>(

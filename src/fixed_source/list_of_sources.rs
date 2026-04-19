@@ -1,31 +1,95 @@
 use std::time::Duration;
 
-use rodio::{FixedSource, Sample};
+use rodio::FixedSource;
 
+use crate::fixed_source::{MaybeConvert, convert_if_needed};
 use crate::{ChannelCount, SampleRate};
 
-pub trait TupleSourceAccess {
-    /// items in the tuple
-    const LEN: usize;
+pub trait ListOfSources {
+    /// number of sources in the "list"
+    fn len(&self) -> usize;
 
+    /// get the next sample for the idx-th source in the "list"
     fn next(&mut self, idx: usize) -> Option<f32>;
     fn total_duration(&self, idx: usize) -> Option<Duration>;
     fn channels(&self, idx: usize) -> ChannelCount;
     fn sample_rate(&self, idx: usize) -> SampleRate;
 }
 
-pub trait ConvertedTuple {
-    type Converted: TupleSourceAccess;
-    fn mapped(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted;
+impl<const N: usize, S: FixedSource> ListOfSources for [S; N] {
+    fn len(&self) -> usize {
+        N
+    }
+
+    fn next(&mut self, idx: usize) -> Option<f32> {
+        self[idx].next()
+    }
+
+    fn total_duration(&self, idx: usize) -> Option<Duration> {
+        self[idx].total_duration()
+    }
+
+    fn channels(&self, idx: usize) -> ChannelCount {
+        self[idx].channels()
+    }
+
+    fn sample_rate(&self, idx: usize) -> SampleRate {
+        self[idx].sample_rate()
+    }
+}
+
+impl<S: FixedSource> ListOfSources for Vec<S> {
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn next(&mut self, idx: usize) -> Option<f32> {
+        self[idx].next()
+    }
+
+    fn total_duration(&self, idx: usize) -> Option<Duration> {
+        self[idx].total_duration()
+    }
+
+    fn channels(&self, idx: usize) -> ChannelCount {
+        self[idx].channels()
+    }
+
+    fn sample_rate(&self, idx: usize) -> SampleRate {
+        self[idx].sample_rate()
+    }
+}
+
+pub trait ConvertedListOfSources {
+    type Converted: ListOfSources;
+    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted;
+}
+
+impl<const N: usize, S: FixedSource> ConvertedListOfSources for [S; N] {
+    type Converted = [MaybeConvert<S>; N];
+    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted {
+        self.map(|source| convert_if_needed(source, sample_rate, channels))
+    }
+}
+
+impl<S: FixedSource> ConvertedListOfSources for Vec<S> {
+    type Converted = Vec<MaybeConvert<S>>;
+    fn converted(self, sample_rate: SampleRate, channels: ChannelCount) -> Self::Converted {
+        self.into_iter()
+            .map(|source| convert_if_needed(source, sample_rate, channels))
+            .collect()
+    }
 }
 
 macro_rules! tuple_impl {
     ($len:literal; $($generics:ident),+; $($count:tt),*) => {
-        impl<$($generics),+> TupleSourceAccess for ($($generics),+)
+        impl<$($generics),+> ListOfSources for ($($generics),+)
         where
             $($generics: crate::FixedSource),+
         {
-            const LEN: usize = $len;
+            fn len(&self) -> usize {
+                $len
+            }
 
             fn next(&mut self, idx: usize) -> Option<crate::Sample> {
                 match idx {
@@ -56,13 +120,13 @@ macro_rules! tuple_impl {
             }
         } // impl trait
 
-        impl<$($generics),+> ConvertedTuple for ($($generics),+)
+        impl<$($generics),+> ConvertedListOfSources for ($($generics),+)
         where
             $($generics: crate::FixedSource),+
         {
             type Converted = ( $( crate::fixed_source::MaybeConvert<$generics>),+ );
 
-            fn mapped(
+            fn converted(
                 self,
                 sample_rate: SampleRate,
                 channels: ChannelCount,

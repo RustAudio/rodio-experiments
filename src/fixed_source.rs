@@ -44,7 +44,7 @@ pub mod route_channels;
 pub mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};
 
-mod tuple_access;
+mod list_of_sources;
 
 use conversions::channel_count::ChannelConverter;
 use conversions::sample_rate::Resampler;
