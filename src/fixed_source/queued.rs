@@ -24,7 +24,6 @@ impl<T: ListOfSources> FixedSource for Queued<T> {
 
     fn total_duration(&self) -> Option<std::time::Duration> {
         (0..self.inner.len())
-            .into_iter()
             .map(|idx| self.inner.total_duration(idx))
             .fold_options(Duration::ZERO, |sum, dur| sum + dur)
     }

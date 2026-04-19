@@ -46,9 +46,7 @@ impl CubicBezier {
 
         fn pick_probable_root<const N: usize>(options: [f32; N]) -> f32 {
             options
-                .into_iter()
-                .filter(|pos| (-0.00001..=1.00001).contains(pos))
-                .next()
+                .into_iter().find(|pos| (-0.00001..=1.00001).contains(pos))
                 .expect("no sensible root")
         }
 

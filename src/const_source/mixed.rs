@@ -14,7 +14,6 @@ impl<const SR: u32, const CH: u16, T: ListOfSources<SR, CH>> ConstSource<SR, CH>
 {
     fn total_duration(&self) -> Option<std::time::Duration> {
         (0..self.inner.len())
-            .into_iter()
             .map(|idx| self.inner.total_duration(idx))
             .fold_options(Duration::ZERO, |max, dur| max.max(dur))
     }
@@ -25,10 +24,9 @@ impl<const SR: u32, const CH: u16, T: ListOfSources<SR, CH>> Iterator for Mixed<
 
     fn next(&mut self) -> Option<Self::Item> {
         let (sum, summed) = (0..self.inner.len())
-            .into_iter()
             .filter_map(|idx| self.inner.next(idx))
             .map(|sample| sample as f64)
-            .zip((1usize..).into_iter())
+            .zip(1usize..)
             .reduce(|(sum, _), (sample, summed)| (sum + sample, summed))?;
         Some((sum / summed as f64) as crate::Float)
     }
