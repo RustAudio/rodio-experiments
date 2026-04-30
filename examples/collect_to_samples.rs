@@ -11,13 +11,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let samples: Vec<f32> = Decoder::try_from(file)?
         .resample_into_fixed_source(nz!(44100), nz!(1))
         .automatic_gain_control(AutomaticGainControlSettings::default())
-        .take_duration(Duration::from_secs(5))
+        .skip_duration(Duration::from_secs(3))
+        .take_duration(Duration::from_secs(2))
         .collect();
 
     // Could use this to power a visualization or something...
     // If you also want to play it back simultaneous you'd need
     // something like rodio-tap (see crates.io)
-    println!("Number of samples in 5 seconds of audio: {}", samples.len());
+    println!("Number of samples in 2 seconds of audio: {}", samples.len());
 
     Ok(())
 }

@@ -10,6 +10,8 @@ pub mod limiter;
 mod pausable;
 mod periodic_access;
 mod position;
+mod skip_duration;
+mod skip_samples;
 mod stoppable;
 mod take_duration;
 mod take_samples;
@@ -33,6 +35,8 @@ pub mod fixed_source {
     pub use super::pausable::fixed_source::Pausable;
     pub use super::periodic_access::fixed_source::PeriodicAccess;
     pub use super::position::fixed_source::TrackPosition;
+    pub use super::skip_duration::fixed_source::SkipDuration;
+    pub use super::skip_samples::fixed_source::SkipSamples;
     pub use super::stoppable::fixed_source::Stoppable;
     pub use super::take_duration::fixed_source::TakeDuration;
     pub use super::take_samples::fixed_source::TakeSamples;
@@ -51,18 +55,21 @@ pub mod const_source {
     pub use super::pausable::const_source::Pausable;
     pub use super::periodic_access::const_source::PeriodicAccess;
     pub use super::position::const_source::TrackPosition;
+    pub use super::skip_duration::const_source::SkipDuration;
+    pub use super::skip_samples::const_source::SkipSamples;
     pub use super::stoppable::const_source::Stoppable;
     pub use super::take_duration::const_source::TakeDuration;
     pub use super::take_samples::const_source::TakeSamples;
     pub use super::with_data::const_source::WithData;
 }
 pub mod dynamic_source {
+    pub use super::amplify::dynamic_source::Amplify;
     pub use super::distortion::dynamic_source::Distortion;
     pub use super::pausable::dynamic_source::Pausable;
     pub use super::periodic_access::dynamic_source::PeriodicAccess;
+    pub use super::skip_samples::dynamic_source::SkipSamples;
     pub use super::stoppable::dynamic_source::Stoppable;
     pub use super::with_data::dynamic_source::WithData;
-    pub use super::amplify::dynamic_source::Amplify;
 }
 
 macro_rules! pure_effect {
@@ -140,7 +147,7 @@ macro_rules! pure_effect {
                 $($field: $field_ty,)*
             }
             fn next(&mut $self) -> Option<Sample> $body
-            fn new$(<$new_generic: $new_bound>)?($($factory_args)*) 
+            fn new$(<$new_generic: $new_bound>)?($($factory_args)*)
                 -> $factory_name<Self> $factory_body
             $($(#[$m_meta])* $m_vis fn $m_name($($args)*) $(-> $m_ret)? $m_body)*
         }

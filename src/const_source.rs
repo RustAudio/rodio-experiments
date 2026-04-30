@@ -8,14 +8,16 @@ use crate::Float;
 use crate::Sample;
 use crate::SampleRate;
 use crate::Source as DynamicSource; // will be renamed to this upstream
-use crate::const_source::chain::SourceChain;
-use crate::effects::IntoEnvelope;
-use crate::effects::amplify::Factor;
-use crate::effects::const_source::ChannelVolume;
-use crate::effects::const_source::Distortion;
-use crate::effects::const_source::Dither;
-use crate::effects::const_source::Fade;
-use crate::effects::const_source::TrackPosition;
+
+use crate::effects::const_source::{
+    Amplify, AutomaticGainControl, BltFilter, ChannelVolume, Distortion, Dither, Fade,
+    InspectFrame, Limit, Pausable, PeriodicAccess, SkipDuration, SkipSamples, Stoppable,
+    TakeDuration, TakeSamples, TrackPosition, WithData,
+};
+use crate::effects::{
+    IntoEnvelope, amplify::Factor, automatic_gain_control::AutomaticGainControlSettings,
+    blt::BltFormula, dither::Algorithm as DitherAlgorithm, limiter::LimitSettings,
+};
 
 // pub mod adapter; replaced with into_fixed_source and into_const_source
 pub mod buffer;
@@ -36,18 +38,9 @@ mod list_of_sources;
 mod macros;
 pub(crate) use macros::{add_inner_methods, impl_wrapper};
 
-use crate::const_source::buffer::SamplesBuffer;
-use crate::const_source::conversions::channelcount::ChannelConvertor;
-use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
-use crate::effects::blt::BltFormula;
-use crate::effects::const_source::BltFilter;
-use crate::effects::const_source::Limit;
-use crate::effects::const_source::{
-    Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
-    TakeSamples, WithData,
-};
-use crate::effects::dither::Algorithm as DitherAlgorithm;
-use crate::effects::limiter::LimitSettings;
+use buffer::SamplesBuffer;
+use chain::SourceChain;
+use conversions::channelcount::ChannelConvertor;
 
 pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
     fn sample_rate(&self) -> SampleRate {
@@ -78,6 +71,22 @@ pub trait ConstSource<const SR: u32, const CH: u16>: Iterator<Item = Sample> {
         Self: Sized,
     {
         ChannelConvertor::new(self)
+    }
+
+    #[doc = include_str!("effects/skip_duration.md")]
+    fn skip_duration(self, duration: Duration) -> SkipDuration<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        SkipDuration::new(self, duration)
+    }
+
+    #[doc = include_str!("effects/skip_samples.md")]
+    fn skip_samples(self, samples: usize) -> SkipSamples<SR, CH, Self>
+    where
+        Self: Sized,
+    {
+        SkipSamples::new(self, samples)
     }
 
     #[doc = include_str!("effects/take_duration.md")]

@@ -7,8 +7,9 @@ use crate::Source as DynamicSource;
 use crate::dynamic_source::conversions::channel_count::VariableInputChannelConvertor;
 use crate::dynamic_source::conversions::sample_rate::VariableInputResampler;
 use crate::effects::amplify::Factor;
-use crate::effects::dynamic_source::Distortion;
-use crate::effects::dynamic_source::{Amplify, Pausable, PeriodicAccess, Stoppable, WithData};
+use crate::effects::dynamic_source::{
+    Amplify, Distortion, Pausable, PeriodicAccess, SkipSamples, Stoppable, WithData,
+};
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
@@ -24,6 +25,14 @@ pub trait DynamicSourceExt {
     ) -> IntoFixedSource<Self>
     where
         Self: DynamicSource + Sized;
+
+    #[doc = include_str!("effects/skip_samples.md")]
+    fn skip_samples(self, samples: usize) -> SkipSamples<Self>
+    where
+        Self: DynamicSource + Sized,
+    {
+        SkipSamples::new(self, samples)
+    }
 
     #[doc = include_str!("effects/amplify.md")]
     fn amplify(self, factor: Factor) -> Amplify<Self>

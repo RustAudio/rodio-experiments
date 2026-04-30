@@ -9,20 +9,14 @@ use crate::SampleRate;
 use crate::effects::IntoEnvelope;
 use crate::effects::amplify::Factor;
 use crate::effects::blt::BltFormula;
-use crate::effects::fixed_source::ChannelVolume;
-use crate::effects::fixed_source::Distortion;
-use crate::effects::fixed_source::Dither;
-use crate::effects::fixed_source::Fade;
-use crate::effects::fixed_source::TrackPosition;
 
 use crate::ConstSource;
 use crate::effects::automatic_gain_control::AutomaticGainControlSettings;
 use crate::effects::dither::Algorithm as DitherAlgorithm;
-use crate::effects::fixed_source::BltFilter;
-use crate::effects::fixed_source::Limit;
 use crate::effects::fixed_source::{
-    Amplify, AutomaticGainControl, InspectFrame, Pausable, PeriodicAccess, Stoppable, TakeDuration,
-    TakeSamples, WithData,
+    Amplify, AutomaticGainControl, BltFilter, ChannelVolume, Distortion, Dither, Fade,
+    InspectFrame, Limit, Pausable, PeriodicAccess, SkipDuration, SkipSamples, Stoppable,
+    TakeDuration, TakeSamples, TrackPosition, WithData,
 };
 use crate::effects::limiter::LimitSettings;
 use buffer::SamplesBuffer;
@@ -50,6 +44,22 @@ use conversions::channel_count::ChannelConverter;
 use conversions::sample_rate::Resampler;
 
 pub trait FixedSourceExt: FixedSource {
+    #[doc = include_str!("effects/skip_duration.md")]
+    fn skip_duration(self, duration: Duration) -> SkipDuration<Self>
+    where
+        Self: Sized,
+    {
+        SkipDuration::new(self, duration)
+    }
+
+    #[doc = include_str!("effects/skip_samples.md")]
+    fn skip_samples(self, samples: usize) -> SkipSamples<Self>
+    where
+        Self: Sized,
+    {
+        SkipSamples::new(self, samples)
+    }
+
     #[doc = include_str!("effects/take_duration.md")]
     fn take_duration(self, duration: Duration) -> TakeDuration<Self>
     where
@@ -99,8 +109,9 @@ pub trait FixedSourceExt: FixedSource {
     /// Tries to convert from a fixed source to a const one assuming
     /// the parameters already match. If they do not this returns an error.
     ///
-    /// If the parameters do not match you can resample using: [with_sample_rate] and
-    /// [with_channel_count].
+    /// If the parameters do not match you can resample using:
+    /// [`with_sample_rate`](Self::with_sample_rate) and
+    /// [`with_channel_count`](Self::with_channel_count).
     fn try_into_const_source<const SR: u32, const CH: u16>(
         self,
     ) -> Result<IntoConstSource<SR, CH, Self>, ParameterMismatch<SR, CH>>
