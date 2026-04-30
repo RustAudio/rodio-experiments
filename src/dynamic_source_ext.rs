@@ -12,7 +12,7 @@ use crate::effects::dynamic_source::{Amplify, Pausable, PeriodicAccess, Stoppabl
 
 /// Just here for the experimental phase, since we cant add anything
 /// to Source/DynamicSource during it.
-pub trait ExtendDynamicSource {
+pub trait DynamicSourceExt {
     /// Only succeeds if the span length is `None` (infinite).
     fn try_as_fixed_source(self) -> Result<AsFixedSource<Self>, ParametersCanChange>
     where
@@ -130,7 +130,7 @@ impl<S: DynamicSource> Iterator for AsFixedSource<S> {
 )]
 pub struct ParametersCanChange;
 
-impl<S: DynamicSource> ExtendDynamicSource for S {
+impl<S: DynamicSource> DynamicSourceExt for S {
     fn resample_into_fixed_source(
         self,
         sample_rate: SampleRate,

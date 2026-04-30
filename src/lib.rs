@@ -41,3 +41,5 @@ pub use rodio::cpal;
 pub use const_source::ConstSource;
 pub use rodio::FixedSource;
 pub use rodio::Source as DynamicSource;
+pub use dynamic_source_ext::DynamicSourceExt;
+pub use fixed_source::FixedSourceExt;

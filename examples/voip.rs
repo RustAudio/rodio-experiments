@@ -2,7 +2,7 @@ use clap::Parser;
 use rodio::nz;
 use rodio::speakers::SpeakersBuilder;
 use rodio_experiments::ConstSource;
-use rodio_experiments::dynamic_source_ext::ExtendDynamicSource;
+use rodio_experiments::dynamic_source_ext::DynamicSourceExt;
 use rodio_experiments::fixed_source::FixedSourceExt;
 use std::error::Error;
 use std::net::UdpSocket;

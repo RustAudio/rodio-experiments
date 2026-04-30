@@ -1,4 +1,3 @@
-use rodio::wav_to_file;
 use rodio_experiments::effects::amplify::Factor;
 use rodio_experiments::effects::fade::{CurveControls, CurveEnvelope, LinearEnvelope, Scale};
 use rodio_experiments::fixed_source::FixedSourceExt;
@@ -65,16 +64,6 @@ const ATTACK: CurveControls = CurveControls {
     y1: 0.77,
     x2: 0.32,
     y2: 1.0,
-};
-
-// nice editor for cubic bezier curves
-// https://www.desmos.com/calculator/iogphoixw4
-// https://www.azcalculator.com/calculators/bezier-curve-calculator
-const DECAY: CurveControls = CurveControls {
-    x1: 0.0,
-    y1: 0.0,
-    x2: 1.0,
-    y2: 0.0,
 };
 
 const RELEASE: CurveControls = CurveControls {
